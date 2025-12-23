@@ -1,0 +1,511 @@
+/* ==================== 0. 核心变量 (Design Tokens) ==================== */
+:root {
+  /* 调色板 - Light Mode */
+  --bg-app: #f1f5f9;          /* 应用背景 */
+  --bg-card: #ffffff;         /* 卡片背景 */
+  --bg-elevated: #f8fafc;     /* 悬浮层/选项背景 */
+  
+  --text-main: #334155;       /* 主要文字 */
+  --text-muted: #64748b;      /* 次要文字 */
+  
+  --primary: #6366f1;         /* 主色：靛蓝 */
+  --primary-soft: #e0e7ff;    /* 主色（浅） */
+  
+  --success: #10b981;         /* 成功色：翠绿 */
+  --success-soft: #d1fae5;
+  
+  --error: #ef4444;           /* 错误色：赤红 */
+  --error-soft: #fee2e2;
+  
+  --warning: #f59e0b;         /* 警告色 */
+  
+  /* UI 属性 */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-float: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+}
+
+/* Anki 夜间模式自动适配 */
+.night {
+  --bg-app: #0f172a;
+  --bg-card: #1e293b;
+  --bg-elevated: #334155;
+  
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+  
+  --primary: #818cf8;
+  --primary-soft: #312e81;
+  
+  --success: #34d399;
+  --success-soft: #064e3b;
+  
+  --error: #f87171;
+  --error-soft: #7f1d1d;
+}
+
+/* ==================== 1. 全局布局 ==================== */
+body {
+  margin: 0;
+  padding: 20px;
+  background-color: var(--bg-app); /* 在 Anki 预览窗口生效 */
+  font-family: var(--font-sans);
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+/* 隐藏滚动条但允许滚动 */
+body::-webkit-scrollbar { display: none; }
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--bg-card);
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  position: relative;
+  overflow: hidden; /* 防止子元素溢出圆角 */
+}
+
+/* 顶部装饰条 */
+.container::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--primary), #a855f7);
+}
+
+@media (max-width: 600px) {
+  body { padding: 10px; }
+  .container { padding: 1.5rem; border-radius: var(--radius-md); }
+}
+
+/* ==================== 2. 填空题 (Modern Inputs) ==================== */
+.fitb {
+  display: inline-block;
+  position: relative;
+  margin: 0 4px;
+}
+
+.fitb input {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--text-muted);
+  border-radius: 0;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 1.1em;
+  font-weight: 500;
+  padding: 0 4px;
+  text-align: center;
+  min-width: 60px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+/* 聚焦状态 */
+.fitb input:focus {
+  border-color: var(--primary);
+  background: var(--bg-elevated);
+  border-radius: 4px; /* 聚焦时变成小方块 */
+  border-bottom: 2px solid transparent; /* 移除下划线 */
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* 正确/错误状态 */
+.fitb.correct input {
+  color: var(--success);
+  border-bottom-color: var(--success);
+  background: var(--success-soft);
+  border-radius: 4px;
+  border-bottom: none;
+}
+
+.fitb.error input {
+  color: var(--error);
+  border-bottom-color: var(--error);
+  background: var(--error-soft);
+  animation: shake 0.4s ease-in-out;
+}
+
+.feedback-icon {
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8em;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.fitb.correct .feedback-icon, .fitb.error .feedback-icon { opacity: 1; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* ==================== 3. 选项卡 (Segmented Control) ==================== */
+.tabs-container {
+  margin: 2em 0;
+}
+
+.tabs-nav {
+  display: flex;
+  background: var(--bg-elevated);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5em;
+}
+
+.tab-button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 16px;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-button.active {
+  background: var(--bg-card);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+  transform: scale(1.02);
+}
+
+.tab-button:hover:not(.active) {
+  color: var(--text-main);
+}
+
+.tab-pane {
+  display: none;
+  animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tab-pane.active { display: block; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==================== 4. 选择题 (Card Style MCQ) ==================== */
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 2em 0;
+}
+
+.mcq-question {
+  font-size: 1.1em;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+  color: var(--text-main);
+}
+
+.options {
+  display: grid;
+  gap: 10px;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 2px solid var(--bg-elevated);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.option input { display: none; }
+
+/* 悬停效果 */
+.option:hover {
+  border-color: var(--primary);
+  background: var(--bg-elevated);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* 选中状态 */
+.option.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+/* 选项内容布局 */
+.option-content {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.option-letter {
+  font-family: var(--font-mono);
+  font-weight: bold;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  height: fit-content;
+}
+
+.option.selected .option-letter {
+  background: var(--bg-card);
+  color: var(--primary);
+}
+
+/* 勾选圆圈 */
+.checkmark {
+  display: none; /* 在现代风格中，我们用边框颜色代替圆圈，更简洁 */
+}
+
+/* 结果反馈 - 覆盖默认颜色 */
+.option.correct { border-color: var(--success); background: var(--success-soft); }
+.option.incorrect { border-color: var(--error); background: var(--error-soft); }
+.option.not-selected { opacity: 0.5; border-style: dashed; }
+
+/* 底部状态条 */
+.feedback {
+  margin-top: 10px;
+  padding: 12px;
+  text-align: center;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.feedback:hover { filter: brightness(0.95); transform: scale(0.99); }
+
+.feedback.correct { background: var(--success); color: white; }
+.feedback.incorrect { background: var(--error); color: white; }
+.feedback.incomplete { background: var(--warning); color: white; }
+
+/* ==================== 5. 音频播放器 (Capsule Style) ==================== */
+.audio-player {
+  background: var(--bg-elevated);
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 30px; /* 胶囊形状 */
+  padding: 15px 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 1.5em 0;
+  box-shadow: var(--shadow-sm);
+  color: var(--text-main);
+}
+
+.audio-player i { display: none; } /* 隐藏 JS 默认图标 */
+
+/* 时间显示 */
+.time-display {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* 进度条轨道 */
+.progress-container {
+  height: 6px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+  overflow: visible;
+}
+.night .progress-container { background: rgba(255,255,255,0.1); }
+
+/* 进度条填充 */
+.progress-bar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  width: 0%;
+  position: relative;
+}
+/* 进度条末端的小球 */
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  right: -4px; top: -3px;
+  width: 12px; height: 12px;
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* AB 标记点 */
+.ab-marker {
+  position: absolute;
+  top: -3px; bottom: -3px;
+  width: 2px;
+  background: var(--warning);
+  z-index: 1;
+}
+
+/* 播放控件区 */
+.player-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+/* 按钮通用复位 */
+.player-controls button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.7;
+}
+.player-controls button:hover { opacity: 1; transform: scale(1.1); }
+.player-controls button:active { transform: scale(0.9); }
+
+/* SVG 图标映射 (使用 CSS Mask 技术适配夜间模式颜色) */
+/* 注意：由于 background-image 无法直接变色，这里我们保持你之前的 Data URI，
+   但在夜间模式下可能图标是白色的，这很好。如果是黑色的，可能需要调整。
+   为了保险，这里使用滤镜反转 */
+
+.night .player-controls button { filter: invert(1); }
+.night .play-btn { filter: none !important; } /* 播放按钮通常有填充色，不用反转 */
+
+/* 具体按钮图标定义 */
+.play-btn {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background-color: var(--primary) !important;
+  opacity: 1 !important;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path fill="white" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg>');
+  background-size: 18px !important;
+}
+.play-btn[title="Pause"] {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path fill="white" d="M48 64C21.5 64 0 85.5 0 112L0 400c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-288c0-26.5-21.5-48-48-48L48 64zm192 0c-26.5 0-48 21.5-48 48l0 288c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-288c0-26.5-21.5-48-48-48l-32 0z"/></svg>');
+}
+
+/* 其他小按钮 (24px) */
+.replay-btn, .setA-btn, .setB-btn, .cancelLoop-btn { width: 20px; height: 20px; }
+
+.replay-btn { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="%2364748b" d="M386.3 160L336 160c-17.7 0-32 14.3-32 32s14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-128c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 51.2L414.4 97.6c-87.5-87.5-229.3-87.5-316.8 0s-87.5 229.3 0 316.8s229.3 87.5 316.8 0c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0c-62.5 62.5-163.8 62.5-226.3 0s-62.5-163.8 0-226.3s163.8-62.5 226.3 0L386.3 160z"/></svg>'); }
+.setA-btn { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="%2364748b" d="M64 32C64 14.3 49.7 0 32 0S0 14.3 0 32L0 64 0 368 0 480c0 17.7 14.3 32 32 32s32-14.3 32-32l0-128 64.3-16.1c41.1-10.3 84.6-5.5 122.5 13.4c44.2 22.1 95.5 24.8 141.7 7.4l34.7-13c12.5-4.7 20.8-16.6 20.8-30l0-247.7c0-23-24.2-38-44.8-27.7l-9.6 4.8c-46.3 23.2-100.8 23.2-147.1 0c-35.1-17.6-75.4-22-113.5-12.5L64 48l0-16z"/></svg>'); }
+.setB-btn { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="%2364748b" d="M32 0C49.7 0 64 14.3 64 32l0 16 69-17.2c38.1-9.5 78.3-5.1 113.5 12.5c46.3 23.2 100.8 23.2 147.1 0l9.6-4.8C423.8 28.1 448 43.1 448 66.1l0 279.7c0 13.3-8.3 25.3-20.8 30l-34.7 13c-46.2 17.3-97.6 14.6-141.7-7.4c-37.9-19-81.3-23.7-122.5-13.4L64 384l0 96c0 17.7-14.3 32-32 32s-32-14.3-32-32l0-80 0-66L0 64 0 32C0 14.3 14.3 0 32 0zM64 187.1l64-13.9 0 65.5L64 252.6 64 318l48.8-12.2c5.1-1.3 10.1-2.4 15.2-3.3l0-63.9 38.9-8.4c8.3-1.8 16.7-2.5 25.1-2.1l0-64c13.6 .4 27.2 2.6 40.4 6.4l23.6 6.9 0 66.7-41.7-12.3c-7.3-2.1-14.8-3.4-22.3-3.8l0 71.4c21.8 1.9 43.3 6.7 64 14.4l0-69.8 22.7 6.7c13.5 4 27.3 6.4 41.3 7.4l0-64.2c-7.8-.8-15.6-2.3-23.2-4.5l-40.8-12 0-62c-13-3.8-25.8-8.8-38.2-15c-8.2-4.1-16.9-7-25.8-8.8l0 72.4c-13-.4-26 .8-38.7 3.6L128 173.2 128 98 64 114l0 73.1zM320 335.7c16.8 1.5 33.9-.7 50-6.8l14-5.2 0-71.7-7.9 1.8c-18.4 4.3-37.3 5.7-56.1 4.5l0 77.4zm64-149.4l0-70.8c-20.9 6.1-42.4 9.1-64 9.1l0 69.4c13.9 1.4 28 .5 41.7-2.6l22.3-5.2z"/></svg>'); }
+.cancelLoop-btn { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="%2364748b" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z"/></svg>'); }
+.cancelLoop-btn.active { filter: drop-shadow(0 0 2px red); opacity: 1; }
+
+.speed-select {
+  background: transparent;
+  border: 1px solid var(--text-muted);
+  color: var(--text-muted);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  margin-left: auto;
+}
+
+/* ==================== 6. 其他组件 ==================== */
+
+/* 折叠块 */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-elevated);
+  border-radius: var(--radius-md);
+  margin-bottom: 1em;
+  overflow: hidden;
+}
+summary {
+  padding: 12px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--bg-elevated);
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+summary::after { content: '›'; font-size: 1.5em; transition: transform 0.2s; color: var(--text-muted); }
+details[open] summary::after { transform: rotate(90deg); }
+.collapse-content { padding: 15px 20px; border-top: 1px solid var(--bg-elevated); }
+
+/* Reveal (遮盖内容) */
+.reveal {
+  background: var(--text-muted);
+  color: transparent;
+  border-radius: 4px;
+  padding: 0 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+.reveal.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.reveal:hover:not(.active) { opacity: 0.8; }
+
+/* 批注 (Annotation) */
+.annotation {
+  border-bottom: 2px dotted var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+  cursor: help;
+  position: relative;
+}
+/* Tooltip 样式在 JS 中动态定位，这里只负责外观 */
+.tooltip {
+  background: var(--text-main); /* 深色背景 */
+  color: var(--bg-card);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  box-shadow: var(--shadow-float);
+  z-index: 1000;
+  max-width: 300px;
+}
+.night .tooltip { background: #e2e8f0; color: #1e293b; } /* 夜间模式 Tooltip 反白 */
+
+/* 代码块 */
+pre {
+  background: #1e293b;
+  border-radius: var(--radius-md);
+  padding: 1em;
+  overflow-x: auto;
+}
+code { font-family: var(--font-mono); font-size: 0.9em; }
+.night pre { background: #0f172a; border: 1px solid #334155; }
+
+/* 底部标签 */
+.quizify-tags, .quizify-deck {
+  text-align: center;
+  margin-top: 3em;
+  font-size: 0.8em;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
