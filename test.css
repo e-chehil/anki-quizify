@@ -1,0 +1,521 @@
+:root {
+  /* --- 核心色彩系统 --- */
+  --primary-hue: 210; /* 蓝色系基调 */
+  --primary: hsl(var(--primary-hue), 80%, 45%);
+  --primary-light: hsl(var(--primary-hue), 80%, 92%);
+  --primary-dark: hsl(var(--primary-hue), 80%, 30%);
+
+  --accent-hue: 160; /* 绿色系基调 (强调/成功) */
+  --accent: hsl(var(--accent-hue), 60%, 45%);
+  --success: hsl(150, 70%, 40%);
+  --success-bg: hsl(150, 70%, 95%);
+  
+  --error: hsl(350, 70%, 55%);
+  --error-bg: hsl(350, 70%, 96%);
+  
+  --warning: hsl(40, 90%, 50%);
+  --warning-bg: hsl(40, 90%, 96%);
+
+  --text-main: #2d3748;
+  --text-muted: #718096;
+  --bg-body: #f7fafc;
+  --bg-card: #ffffff;
+  
+  /* --- 阴影与圆角 --- */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* --- 特殊组件 --- */
+  --annotation-bg: var(--primary);
+  --tooltip-bg: #2d3748;
+  --tooltip-text: #ffffff;
+}
+
+/* ------------------------------------------------ 全局布局 */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 2rem 1rem;
+  min-height: 100vh;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* 避免 flex 居中导致长卡片顶部被切 */
+}
+
+/* Anki 滚动条隐藏 */
+body::-webkit-scrollbar { display: none; }
+
+.container {
+  width: 100%;
+  max-width: 800px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 2.5rem;
+  position: relative;
+  overflow: hidden; /* 防止子元素溢出圆角 */
+}
+
+/* 卡片顶部装饰条 */
+.container::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+/* ------------------------------------------------ 文本与排版 */
+h1, h2, h3 { color: var(--primary-dark); margin-top: 1.5em; margin-bottom: 0.5em; font-weight: 700; }
+p { margin-bottom: 1em; }
+code { background: #edf2f7; padding: 0.2em 0.4em; border-radius: 4px; font-family: "Fira Code", monospace; font-size: 0.9em; color: #c05621; }
+pre { background: #2d3748; color: #e2e8f0; padding: 1em; border-radius: var(--radius-md); overflow-x: auto; }
+pre code { background: none; color: inherit; padding: 0; }
+blockquote { border-left: 4px solid var(--primary); background: var(--primary-light); margin: 1.5em 0; padding: 1em 1.5em; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--primary-dark); }
+
+/* ------------------------------------------------ 填空题 (FITB) */
+.fitb {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  margin: 0 4px;
+  vertical-align: middle;
+}
+
+.fitb input {
+  padding: 0.3em 2.2em 0.3em 0.8em; /* 右侧留出图标位置 */
+  border: 2px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  color: var(--text-main);
+  background: #fff;
+  transition: all 0.2s ease;
+  outline: none;
+  min-width: 60px;
+  font-family: inherit;
+  font-weight: 500;
+  text-align: center;
+}
+
+.fitb input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.fitb.correct input {
+  border-color: var(--success);
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.fitb.error input {
+  border-color: var(--error);
+  background-color: var(--error-bg);
+  color: var(--error);
+}
+
+.feedback-icon {
+  position: absolute;
+  right: 8px;
+  font-size: 0.9em;
+  font-weight: bold;
+  pointer-events: none; /* 图标不干扰输入 */
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.2s ease;
+}
+
+.fitb.correct .feedback-icon { color: var(--success); opacity: 1; transform: scale(1); content: "✓"; }
+.fitb.error .feedback-icon { color: var(--error); opacity: 1; transform: scale(1); content: "✕"; }
+
+/* ------------------------------------------------ 选择题 (MCQ) */
+.choice { margin: 2em 0; }
+
+.mcq-question {
+  font-weight: 600;
+  margin-bottom: 1em;
+  font-size: 1.1em;
+}
+
+.options {
+  display: grid;
+  gap: 0.8em;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  padding: 1em 1.2em;
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.option:hover {
+  border-color: var(--primary-light);
+  background: #f7fafc;
+  transform: translateY(-1px);
+}
+
+.option.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.option.correct {
+  border-color: var(--success);
+  background: var(--success-bg);
+}
+
+.option.incorrect {
+  border-color: var(--error);
+  background: var(--error-bg);
+}
+
+.option.not-selected {
+  border-color: var(--warning);
+  background: var(--warning-bg);
+  opacity: 0.8;
+}
+
+/* 隐藏原生 Input */
+.option input {
+  position: absolute;
+  opacity: 0;
+  width: 0; height: 0;
+}
+
+/* 自定义 Checkbox/Radio 样式 */
+.checkmark {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #cbd5e0;
+  border-radius: 50%; /* 圆形 */
+  margin-right: 1em;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s;
+}
+
+/* Radio 选中态 */
+.option input[type="radio"]:checked + .checkmark {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.option input[type="radio"]:checked + .checkmark::after {
+  content: "";
+  width: 8px; height: 8px;
+  background: #fff;
+  border-radius: 50%;
+}
+
+/* Checkbox 选中态 */
+.option input[type="checkbox"] + .checkmark { border-radius: 4px; } /* 方形圆角 */
+.option input[type="checkbox"]:checked + .checkmark {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.option input[type="checkbox"]:checked + .checkmark::after {
+  content: "✔";
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* 序号 A. B. */
+.option-seq {
+  font-weight: 700;
+  color: var(--primary);
+  margin-right: 0.5em;
+  min-width: 1.5em;
+}
+
+.feedback {
+  margin-top: 1em;
+  padding: 0.8em;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  font-size: 0.9em;
+  background: #edf2f7;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.feedback.correct { background: var(--success-bg); color: var(--success); }
+.feedback.incorrect { background: var(--error-bg); color: var(--error); }
+.feedback.incomplete { background: var(--warning-bg); color: var(--warning); }
+
+
+/* ------------------------------------------------ 折叠块 (Collapse) */
+details {
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  margin: 1em 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+summary {
+  padding: 1em 1.5em;
+  background: #f7fafc;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-main);
+  list-style: none; /* 移除默认箭头 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+summary::-webkit-details-marker { display: none; }
+
+summary:hover { background: #edf2f7; }
+
+summary::after {
+  content: "+";
+  font-size: 1.2em;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+details[open] summary::after {
+  transform: rotate(45deg); /* 旋转变成 x */
+}
+
+.collapse-content {
+  padding: 1.5em;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ------------------------------------------------ 标签页 (Tabs) */
+.tabs-container {
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  margin: 1.5em 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.tabs-nav {
+  display: flex;
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-x: auto;
+}
+
+.tab-button {
+  padding: 1em 1.5em;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tab-button:hover { color: var(--primary); background: rgba(0,0,0,0.02); }
+
+.tab-button.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: #fff;
+}
+
+.tabs-content { padding: 1.5em; }
+
+.tab-pane { display: none; }
+.tab-pane.active { display: block; animation: fadeIn 0.3s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ------------------------------------------------ 批注 (Annotation) */
+.annotation {
+  border-bottom: 2px dashed var(--annotation-bg);
+  cursor: help;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.annotation:hover {
+  background: var(--primary-light);
+  border-bottom-style: solid;
+}
+
+/* Tooltip 样式在 JS 中动态定位，这里只负责外观 */
+.tooltip {
+  position: fixed; /* 重要：配合 JS 计算 */
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  padding: 0.8em 1em;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  max-width: 300px;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+/* Tooltip 小三角 */
+.tooltip::after {
+  content: "";
+  position: absolute;
+  /* 位置由 JS 的 CSS 变量控制，这里设默认值 */
+  border: 6px solid transparent;
+}
+
+
+/* ------------------------------------------------ 隐形墨水 (Reveal) */
+.reveal {
+  background: #edf2f7;
+  color: transparent;
+  border-radius: 4px;
+  padding: 0 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+  user-select: none;
+  position: relative;
+}
+
+.reveal::before {
+  content: "点击查看";
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-muted);
+  font-size: 0.8em;
+  pointer-events: none;
+}
+
+.reveal.active {
+  background: transparent;
+  color: inherit;
+  user-select: text;
+}
+.reveal.active::before { display: none; }
+
+
+/* ------------------------------------------------ 音频播放器 (Audio) */
+.audio-player {
+  background: #2d3748; /* 深色背景 */
+  color: #fff;
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  margin: 2em auto;
+  max-width: 400px;
+}
+
+.time-display {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85em;
+  color: #a0aec0;
+  margin-bottom: 0.5em;
+}
+
+.progress-container {
+  height: 6px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  margin-bottom: 1.5em;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--primary); /* 蓝色进度条 */
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.ab-marker {
+  position: absolute;
+  top: -4px; bottom: -4px;
+  width: 2px;
+  background: #e53e3e; /* 红色标记 */
+  z-index: 2;
+}
+.ab-marker[title^="A"] { background: #48bb78; } /* A点绿色 */
+
+.player-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1em;
+}
+
+.player-controls button {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background 0.2s;
+  width: 36px; height: 36px;
+  display: grid;
+  place-items: center;
+}
+.player-controls button:hover { background: rgba(255,255,255,0.1); }
+
+.play-btn {
+  background: var(--primary) !important;
+  width: 48px !important; height: 48px !important;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+.play-btn:hover { transform: scale(1.05); }
+
+/* SVG 图标 (使用内联 SVG 替代 FontAwesome 依赖) */
+.play-btn i { /* 你的 JS 可能还在用 i标签，这里做个兼容容器 */ }
+/* 建议 JS 里直接用 SVG，或者这里用背景图 */
+
+
+.speed-select {
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------ 移动端适配 */
+@media (max-width: 600px) {
+  .container {
+    padding: 1.5rem 1rem;
+    border-radius: var(--radius-md);
+  }
+  
+  .fitb input { min-width: 40px; }
+  
+  .tabs-nav { justify-content: flex-start; }
+  
+  .audio-player { width: 100%; }
+}
