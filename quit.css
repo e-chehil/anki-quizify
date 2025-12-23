@@ -1,0 +1,453 @@
+/* ==================== 0. 全局变量 (Light/Dark 自动适配) ==================== */
+:root {
+  /* --- 亮色模式 --- */
+  --bg-page: #f8fafc;        /* 极淡的灰背景，护眼 */
+  --bg-card: #ffffff;
+  --text-main: #334155;      /* Slate 700 - 比纯黑更柔和 */
+  --text-muted: #94a3b8;     /* Slate 400 */
+  --primary: #4f46e5;        /* Indigo 600 - 高级感蓝紫 */
+  --primary-bg: #eef2ff;
+  --border: #e2e8f0;
+  
+  --success: #10b981;        /* Emerald 500 */
+  --success-bg: #ecfdf5;
+  --error: #ef4444;          /* Red 500 */
+  --error-bg: #fef2f2;
+  --warning: #f59e0b;
+  
+  --radius: 8px;             /* 更克制的圆角 */
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}
+
+/* --- 暗黑模式适配 (Anki 自动检测) --- */
+.nightMode {
+  --bg-page: #0f172a;        /* Slate 900 */
+  --bg-card: #1e293b;        /* Slate 800 */
+  --text-main: #e2e8f0;      /* Slate 200 */
+  --text-muted: #64748b;
+  --primary: #818cf8;        /* Indigo 400 */
+  --primary-bg: rgba(79, 70, 229, 0.2);
+  --border: #334155;
+  
+  --success: #34d399;
+  --success-bg: rgba(16, 185, 129, 0.2);
+  --error: #f87171;
+  --error-bg: rgba(239, 68, 68, 0.2);
+  --shadow: none;
+}
+
+/* ==================== 1. 基础布局 ==================== */
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-page);
+  font-family: var(--font-sans);
+  color: var(--text-main);
+  line-height: 1.7;
+}
+
+/* Anki 容器 */
+.card {
+  background-color: transparent; /* 让 body 接管背景 */
+  font-size: 16px; /* 基础字号 */
+}
+
+/* 内容卡片 */
+.container {
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 2.5rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px; /* 稍大的外圆角 */
+  box-shadow: var(--shadow);
+}
+
+/* 移动端微调 */
+@media (max-width: 600px) {
+  .container {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    padding: 1.5rem 1rem;
+    box-shadow: none;
+  }
+}
+
+/* ==================== 2. 排版细节 ==================== */
+h1, h2, h3 { margin-top: 1.5em; margin-bottom: 0.6em; line-height: 1.3; color: var(--text-main); }
+p { margin-bottom: 1em; }
+
+/* 代码块 */
+pre {
+  background: var(--bg-page);
+  padding: 1em;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+}
+code { font-family: var(--font-mono); font-size: 0.9em; }
+
+/* 引用块 */
+blockquote {
+  border-left: 4px solid var(--primary);
+  background: var(--primary-bg);
+  margin: 1.5em 0;
+  padding: 1em 1.5em;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--text-main);
+  font-style: normal;
+}
+
+/* ==================== 3. 填空题 (Minimal Pill) ==================== */
+.fitb {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 4px;
+  position: relative;
+}
+
+.fitb input {
+  font-family: inherit;
+  font-size: 1em;
+  font-weight: 500;
+  color: var(--primary);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--border); /* 只有底部线条 */
+  padding: 2px 4px;
+  padding-right: 24px; /* 图标位置 */
+  min-width: 60px;
+  text-align: center;
+  transition: all 0.2s ease;
+  border-radius: 4px 4px 0 0;
+}
+
+.fitb input:focus {
+  outline: none;
+  border-bottom-color: var(--primary);
+  background: var(--primary-bg);
+}
+
+/* 状态反馈 */
+.fitb.correct input { border-bottom-color: var(--success); color: var(--success); }
+.fitb.error input { border-bottom-color: var(--error); color: var(--error); background: var(--error-bg); }
+
+.feedback-icon {
+  position: absolute;
+  right: 4px;
+  font-size: 0.8em;
+  pointer-events: none;
+}
+
+/* ==================== 4. 选择题 (Card Style) ==================== */
+.choice {
+  margin: 2em 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mcq-question {
+  font-weight: 700;
+  font-size: 1.1em;
+  margin-bottom: 0.5em;
+  color: var(--text-main);
+}
+
+.options { display: grid; gap: 8px; }
+
+.option {
+  display: flex;
+  align-items: baseline; /* 字母与首行文字对齐 */
+  padding: 12px 16px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.option:hover { border-color: var(--primary); background: var(--bg-card); }
+.option.selected { border-color: var(--primary); background: var(--primary-bg); box-shadow: 0 0 0 1px var(--primary); }
+
+/* 隐藏原生 Input 及 Checkmark 圆圈 (极简风格不需要圆圈) */
+.option input, .checkmark { display: none !important; }
+
+.option-content { width: 100%; display: flex; gap: 12px; }
+
+.option-letter {
+  font-family: var(--font-mono);
+  font-weight: bold;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  flex-shrink: 0;
+}
+.option.selected .option-letter { color: var(--primary); }
+
+/* 结果反馈 */
+.option.correct { background-color: var(--success-bg); border-color: var(--success); color: var(--success); }
+.option.incorrect { background-color: var(--error-bg); border-color: var(--error); }
+.option.not-selected { opacity: 0.6; border-style: dashed; }
+
+.feedback {
+  margin-top: 8px;
+  font-size: 0.9em;
+  text-align: right;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 500;
+}
+.feedback:hover { text-decoration: underline; color: var(--primary); }
+
+/* ==================== 5. 折叠块 (Clean Accordion) ==================== */
+details {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin: 1em 0;
+}
+
+summary {
+  padding: 1em 0;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style: none;
+  color: var(--text-main);
+}
+summary::-webkit-details-marker { display: none; }
+
+summary::after {
+  content: "";
+  width: 8px; height: 8px;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(45deg);
+  transition: transform 0.2s;
+  margin-right: 8px;
+}
+details[open] summary::after { transform: rotate(225deg); border-color: var(--primary); }
+details[open] summary { color: var(--primary); }
+
+.collapse-content { padding-bottom: 1.5em; color: var(--text-main); }
+
+/* ==================== 6. 标签页 (Segmented Control) ==================== */
+.tabs-container {
+  margin: 1.5em 0;
+}
+
+.tabs-nav {
+  display: inline-flex;
+  background: var(--bg-page);
+  padding: 4px;
+  border-radius: 8px; /* 胶囊圆角 */
+  gap: 4px;
+}
+
+.tab-button {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-button:hover { color: var(--text-main); }
+
+.tab-button.active {
+  background: var(--bg-card);
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.tabs-content {
+  margin-top: 1em;
+  padding: 1em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+}
+
+/* ==================== 7. 音频播放器 (Podcaster Style) ==================== */
+.audio-player {
+  background: var(--text-main); /* 深色背景 */
+  color: white;
+  border-radius: 24px; /* 大圆角 */
+  padding: 24px;
+  margin: 2em 0;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+}
+
+/* 隐藏 FontAwesome */
+.audio-player i { display: none; }
+
+.time-display {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8em;
+  font-family: var(--font-mono);
+  opacity: 0.7;
+  margin-bottom: 12px;
+}
+
+.progress-container {
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+  margin-bottom: 20px;
+  transition: height 0.2s;
+}
+.progress-container:hover { height: 8px; }
+
+.progress-bar {
+  background: var(--primary); /* 亮色进度 */
+  height: 100%;
+  border-radius: 2px;
+  position: relative;
+}
+/* 进度条末端小球 */
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  right: -4px; top: 50%;
+  transform: translateY(-50%);
+  width: 8px; height: 8px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+.ab-marker {
+  position: absolute; top: -4px; bottom: -4px; width: 2px;
+  background: #facc15; z-index: 2; pointer-events: none;
+}
+
+/* 控制按钮布局 */
+.player-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.player-controls button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.8;
+  transition: transform 0.2s, opacity 0.2s;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: invert(1); /* 强制图标反白 */
+}
+.player-controls button:hover { opacity: 1; transform: scale(1.1); }
+
+/* --- 极简 SVG 图标定义 --- */
+.play-btn {
+  width: 48px; height: 48px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>');
+}
+.play-btn[title="Pause"] {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>');
+}
+.replay-btn {
+  width: 24px; height: 24px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>');
+}
+.setA-btn {
+  width: 20px; height: 20px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><text x="50%" y="70%" text-anchor="middle" font-weight="bold" font-family="sans-serif" font-size="20">A</text></svg>');
+}
+.setB-btn {
+  width: 20px; height: 20px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><text x="50%" y="70%" text-anchor="middle" font-weight="bold" font-family="sans-serif" font-size="20">B</text></svg>');
+}
+.cancelLoop-btn {
+  width: 20px; height: 20px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>');
+}
+
+.speed-select {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  border-radius: 4px;
+  padding: 4px;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+}
+.speed-select option { color: black; }
+
+/* ==================== 8. 批注 & Reveal (Interactions) ==================== */
+.annotation {
+  border-bottom: 2px dotted var(--text-muted);
+  cursor: help;
+  transition: all 0.2s;
+}
+.annotation:hover { color: var(--primary); border-bottom-color: var(--primary); }
+
+.tooltip {
+  background: var(--text-main);
+  color: var(--bg-card);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  max-width: 260px;
+  z-index: 9999;
+}
+.tooltip::after {
+  border-top-color: var(--text-main); /* 箭头跟随背景 */
+}
+
+/* 模糊遮盖效果 */
+.reveal {
+  filter: blur(5px);
+  background: var(--text-muted);
+  color: transparent;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+.reveal:hover { filter: blur(3px); }
+.reveal.active {
+  filter: blur(0);
+  background: transparent;
+  color: var(--primary);
+  user-select: text;
+}
+.reveal.active .secret { display: inline; }
+
+/* ==================== 9. 底部标签 ==================== */
+.quizify-tags, .quizify-deck {
+  margin-top: 3rem;
+  text-align: center;
+}
+.quizify-tags a, .quizify-deck {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-decoration: none;
+  margin: 0 4px;
+  transition: all 0.2s;
+}
+.quizify-tags a:hover { border-color: var(--primary); color: var(--primary); }
