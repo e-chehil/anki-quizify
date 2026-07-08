@@ -1,7 +1,5 @@
 **在使用前，请仔细阅读本说明，下载链接位于文末。**
 
-<img width="743" alt="word" src="https://github.com/user-attachments/assets/a174f425-9580-4aa8-8b81-4637a6f7c8d3" />
-
 # Quizify (格致)：Anki 全能模板
 
 > 《禮記·大學》：「欲誠其意者，先致其知，致知在格物。」
