@@ -372,7 +372,7 @@ GitHub Actions 会在 Node 20.19、22.13、24 以及 Windows/Linux 打包路径�
 - 纯运行时模块位于 `src/`；生成 bundle 保留 CommonJS 测试导出。
 - 新增复习端媒体时应使用 `_quizify-` 前缀，并由构建脚本写入媒体清单。
 - 修改模板后需要重启 Anki，或在设置对话框保存一次配置，让加载项刷新 `Quizify Markdown` 模板。
-- 仓库尚未声明 Quizify 自身的源码许可证；公开发布源码或接受外部贡献前，作者必须选择并加入项目许可证。`THIRD_PARTY_LICENSES.md` 只覆盖捆绑依赖，不能替代项目许可。
+- Quizify 自身源码 Copyright © 2024-2026 e-chehil，采用 [`AGPL-3.0-or-later`](LICENSE)：发布修改版或通过网络向用户提供修改版功能时，必须依照该许可证提供对应源码。捆绑依赖仍分别遵循 `THIRD_PARTY_LICENSES.md` 中列出的许可证。
 
 ## 安全边界
 

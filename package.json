@@ -2,6 +2,7 @@
   "name": "anki-quizify",
   "version": "1.0.15",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "engines": {
     "node": "^20.19.0 || ^22.13.0 || >=24.0.0"
