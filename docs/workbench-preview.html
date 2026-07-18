@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quizify Workbench Preview</title>
+  <link rel="stylesheet" href="../src/editor/styles.css?v=1.0.15">
+  <style>
+    :root { --wb-bg:#eef1ec; --wb-panel:#fffefa; --wb-soft:#f5f6f2; --wb-text:#202927; --wb-muted:#68746f; --wb-border:#dfe5df; --wb-primary:#147d72; --wb-primary-soft:#e1f3ef; --wb-shadow:0 24px 64px rgba(32,54,48,.14); }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:34px; background:radial-gradient(circle at 12% 8%,rgba(20,125,114,.13),transparent 30rem),var(--wb-bg); color:var(--wb-text); font-family:"Aptos","Segoe UI","PingFang SC",sans-serif; }
+    .preview-grid { display:grid; gap:28px; grid-template-columns:minmax(0,1fr); margin:0 auto; max-width:1200px; }
+    .preview-title { margin:0 0 12px; font-size:13px; color:var(--wb-muted); letter-spacing:.12em; text-transform:uppercase; }
+    .settings-window { justify-self:center; overflow:hidden; width:min(100%,720px); background:var(--wb-bg); border:1px solid var(--wb-border); border-radius:18px; box-shadow:var(--wb-shadow); }
+    .settings-hero { padding:20px 24px 18px; background:var(--wb-panel); border-bottom:1px solid var(--wb-border); }
+    .settings-brand { display:flex; align-items:center; gap:12px; }
+    .settings-logo { display:grid; width:38px; height:38px; place-items:center; background:linear-gradient(145deg,var(--wb-primary),#0b625a); border-radius:11px; color:#fff; font-weight:850; }
+    .settings-heading { min-width:0; }
+    .settings-heading strong { display:block; font-size:21px; }
+    .settings-heading span,.developer { color:var(--wb-muted); font-size:12px; }
+    .version { margin-left:auto; padding:4px 9px; background:var(--wb-soft); border:1px solid var(--wb-border); border-radius:999px; color:var(--wb-primary); font-size:11px; font-weight:750; }
+    .developer { margin:10px 0 0; }
+    .settings-content { display:grid; gap:13px; max-height:650px; overflow:auto; padding:18px 24px 22px; }
+    .settings-card { padding:15px 16px 16px; background:var(--wb-panel); border:1px solid var(--wb-border); border-radius:12px; }
+    .settings-card h3 { margin:0; font-size:15px; }
+    .settings-card > p { margin:4px 0 10px; color:var(--wb-muted); font-size:12px; line-height:1.5; }
+    .setting-option { margin-top:8px; padding:10px 12px; background:var(--wb-soft); border:1px solid var(--wb-border); border-radius:9px; }
+    .setting-option strong { display:flex; align-items:center; gap:8px; font-size:13px; }
+    .setting-option strong::before { content:"✓"; display:grid; width:18px; height:18px; place-items:center; background:var(--wb-primary); border-radius:6px; color:#fff; font-size:11px; }
+    .setting-option p { margin:4px 0 0 26px; color:var(--wb-muted); font-size:12px; line-height:1.45; }
+    .asset-state { padding:10px 12px; background:var(--wb-soft); border:1px solid var(--wb-border); border-radius:9px; }
+    .asset-state strong { color:#287c4b; }
+    .asset-state code { color:var(--wb-muted); font-size:11px; overflow-wrap:anywhere; }
+    .settings-footer { display:flex; justify-content:flex-end; gap:8px; padding:12px 24px 14px; background:var(--wb-panel); border-top:1px solid var(--wb-border); }
+    .settings-footer button { min-height:34px; padding:5px 14px; background:var(--wb-soft); border:1px solid var(--wb-border); border-radius:8px; color:var(--wb-text); }
+    .settings-footer .primary { background:var(--wb-primary); border-color:var(--wb-primary); color:#fff; font-weight:700; }
+    .editor-window { padding:18px; background:#f7f8f6; border:1px solid var(--wb-border); border-radius:18px; box-shadow:var(--wb-shadow); }
+    .native-toolbar { height:42px; margin:-18px -18px 0; background:#ecefeb; border-bottom:1px solid var(--wb-border); border-radius:18px 18px 0 0; }
+    .editor-window .quizify-toolbar { position:relative; }
+    .preview-expanded { margin-top:18px; }
+    .preview-expanded .quizify-live-preview-panel { position:static; width:100%; max-height:none; }
+    .rendered-demo { min-height:190px; padding:22px 26px; background:#fffefa; color:#202927; font:14px/1.72 "Aptos","Segoe UI","PingFang SC",sans-serif; }
+    .rendered-demo h1 { margin:0 0 14px; color:#0b625a; font-size:25px; }
+    .rendered-demo p { margin:9px 0; }
+    .rendered-demo .fitb-demo { display:inline-block; min-width:92px; padding:3px 9px; border:1px solid #8ecfc4; border-radius:8px; background:#e1f3ef; color:#0b625a; text-align:center; }
+    .field-mock { margin-top:18px; padding:16px; min-height:240px; background:#fff; border:1px solid var(--wb-border); border-radius:11px; color:#34413d; font:14px/1.75 ui-monospace,monospace; white-space:pre-wrap; }
+    @media (max-width:760px) { body { padding:16px; } .preview-grid { gap:20px; } }
+    @media (max-width:420px) { body { padding:8px; } .editor-window { padding:4px; border-radius:10px; } }
+    @media(max-width:1050px){ body{padding:16px}.preview-grid{grid-template-columns:1fr}.settings-content{max-height:none} }
+  </style>
+</head>
+<body>
+  <div class="preview-grid">
+    <section>
+      <h2 class="preview-title">Configuration panel</h2>
+      <div class="settings-window">
+        <header class="settings-hero">
+          <div class="settings-brand"><span class="settings-logo">Q</span><div class="settings-heading"><strong>Quizify Markdown</strong><span>Knowledge Canvas · 插件设置</span></div><span class="version">v1.0.15</span></div>
+          <p class="developer">开发者　<b>chehil@163.com</b>　· 2026.07</p>
+        </header>
+        <main class="settings-content">
+          <article class="settings-card"><h3>外观与复习</h3><p>控制 Knowledge Canvas 卡片外观和复习时的快捷交互。</p><div class="setting-option"><strong>使用沉浸式无卡片背景</strong><p>移除卡片容器背景与阴影，让内容自然融入复习页面。</p></div><div class="setting-option"><strong>启用悬浮复习控制</strong><p>点击逐项揭示，并在支持的客户端上通过四向拖拽评分。</p></div></article>
+          <article class="settings-card"><h3>移动端集成</h3><p>按需启用 AnkiDroid 的正式原生接口。</p><div class="setting-option"><strong>启用 AnkiDroid 正式 JavaScript API</strong><p>允许悬浮控制显示答案并提交四种复习难度；Android 限定兼容入口不受此开关影响。</p></div></article>
+          <article class="settings-card"><h3>离线资源</h3><p>校验内置 Markdown、代码高亮、KaTeX、样式与字体。</p><div class="asset-state"><strong>本地资源：23/23　已就绪</strong><br><code>add-on bundle → collection.media</code></div></article>
+        </main>
+        <footer class="settings-footer"><button>取消</button><button class="primary">保存并更新模板</button></footer>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="preview-title">Editor workbench</h2>
+      <div class="editor-window quizify-editor-active">
+        <div class="native-toolbar"></div>
+        <div class="quizify-toolbar quizify-toolbar-docked" role="toolbar" aria-label="Quizify 编辑工具，当前字段：Front 字段">
+          <div class="quizify-command-bar" aria-label="Markdown 格式、Quizify 题型、语法检查和预览">
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="加粗" aria-label="Markdown：加粗"><span class="quizify-markdown-symbol">B</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="斜体" aria-label="Markdown：斜体"><span class="quizify-markdown-symbol"><i>I</i></span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="行内代码" aria-label="Markdown：行内代码"><span class="quizify-markdown-symbol">&lt;/&gt;</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="链接" aria-label="Markdown：链接"><span class="quizify-markdown-symbol">⛓</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="删除线" aria-label="Markdown：删除线"><span class="quizify-markdown-symbol">S</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="高亮" aria-label="Markdown：高亮"><span class="quizify-markdown-symbol">==</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="上标" aria-label="Markdown：上标"><span class="quizify-markdown-symbol">X²</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="下标" aria-label="Markdown：下标"><span class="quizify-markdown-symbol">X₂</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="警告框" aria-label="Markdown：警告框"><span class="quizify-markdown-symbol">!</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="标题" aria-label="Markdown：标题"><span class="quizify-markdown-symbol">H1</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="引用" aria-label="Markdown：引用"><span class="quizify-markdown-symbol">❞</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="无序列表" aria-label="Markdown：无序列表"><span class="quizify-markdown-symbol">•≡</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="有序列表" aria-label="Markdown：有序列表"><span class="quizify-markdown-symbol">1≡</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="代码块" aria-label="Markdown：代码块"><span class="quizify-markdown-symbol">{}</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="图片" aria-label="Markdown：图片"><span class="quizify-markdown-symbol">▧</span></button>
+                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="表格" aria-label="Markdown：表格"><span class="quizify-markdown-symbol">▦</span></button>
+                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="填空 (Ctrl+Alt+1)" aria-label="Quizify 题型：填空，快捷键 Ctrl+Alt+1"><span class="quizify-snippet-symbol" aria-hidden="true">填</span><kbd class="quizify-shortcut">Ctrl+Alt+1</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="选择 (Ctrl+Alt+2)" aria-label="Quizify 题型：选择，快捷键 Ctrl+Alt+2"><span class="quizify-snippet-symbol" aria-hidden="true">选</span><kbd class="quizify-shortcut">Ctrl+Alt+2</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="揭示 (Ctrl+Alt+3)" aria-label="Quizify 题型：揭示，快捷键 Ctrl+Alt+3"><span class="quizify-snippet-symbol" aria-hidden="true">揭</span><kbd class="quizify-shortcut">Ctrl+Alt+3</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="批注 (Ctrl+Alt+4)" aria-label="Quizify 题型：批注，快捷键 Ctrl+Alt+4"><span class="quizify-snippet-symbol" aria-hidden="true">注</span><kbd class="quizify-shortcut">Ctrl+Alt+4</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="折叠 (Ctrl+Alt+5)" aria-label="Quizify 题型：折叠，快捷键 Ctrl+Alt+5"><span class="quizify-snippet-symbol" aria-hidden="true">折</span><kbd class="quizify-shortcut">Ctrl+Alt+5</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="标签页 (Ctrl+Alt+6)" aria-label="Quizify 题型：标签页，快捷键 Ctrl+Alt+6"><span class="quizify-snippet-symbol" aria-hidden="true">页</span><kbd class="quizify-shortcut">Ctrl+Alt+6</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="音频 (Ctrl+Alt+7)" aria-label="Quizify 题型：音频，快捷键 Ctrl+Alt+7"><span class="quizify-snippet-symbol" aria-hidden="true">音</span><kbd class="quizify-shortcut">Ctrl+Alt+7</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="背诵 (Ctrl+Alt+8)" aria-label="Quizify 题型：背诵，快捷键 Ctrl+Alt+8"><span class="quizify-snippet-symbol" aria-hidden="true">背</span><kbd class="quizify-shortcut">Ctrl+Alt+8</kbd></button>
+            <details class="quizify-inspector"><summary class="quizify-tool-button quizify-diagnostics-status" data-state="ok" title="语法通过" aria-label="语法检查：通过">语法通过</summary><div class="quizify-inspector-panel"><ul class="quizify-diagnostics-list"></ul><section class="quizify-preview"><div class="quizify-preview-header"><strong>结构预览</strong><span class="quizify-preview-meta"><span class="quizify-preview-field">Front</span><span class="quizify-preview-count">2 个结构</span></span></div><ol class="quizify-preview-list"><li data-kind="fitb"><span class="quizify-preview-kind">填空</span><strong>第 3 行</strong><span class="quizify-preview-detail">答案：面向连接</span></li><li data-kind="recite"><span class="quizify-preview-kind">背诵</span><strong>第 5 行</strong><span class="quizify-preview-detail">遮挡：40%；模式：mixed</span></li></ol></section></div></details>
+            <details class="quizify-command-menu quizify-preview-menu"><summary class="quizify-tool-button quizify-command-summary" title="预览 Front 字段的交互渲染" aria-label="打开 Front 字段的交互渲染预览">渲染</summary><div class="quizify-live-preview-panel"></div></details>
+          </div>
+        </div>
+        <div class="field-mock"># TCP 协议
+
+TCP 是一种 {{面向连接}} 的传输层协议。
+
+:::: recite mask=40 mode=mixed
+通过 %%三次握手%% 建立可靠连接。
+::::</div>
+        <div class="preview-expanded">
+          <div class="quizify-live-preview-panel">
+            <section class="quizify-rendered-preview"><header class="quizify-rendered-preview-header"><div><strong>交互渲染预览</strong><span>可试用题型、折叠、标签页、背诵和音频；预览操作不会保存答案</span></div><span class="quizify-rendered-preview-field">Front 字段</span></header><div class="quizify-rendered-preview-host"><div class="rendered-demo"><h1>TCP 协议</h1><p>TCP 是一种 <span class="fitb-demo">面向连接</span> 的传输层协议。</p><p>通过三次握手建立可靠连接。</p></div></div></section>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

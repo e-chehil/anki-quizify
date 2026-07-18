@@ -1,0 +1,28 @@
+{
+  "name": "anki-quizify",
+  "version": "1.0.15",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24.0.0"
+  },
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "build:release": "node tools/build.mjs --release",
+    "test:js": "node --test tests-js/*.test.mjs && node tools/run-legacy-tests.mjs",
+    "test:py": "python tools/check_test_layout.py && python -m unittest discover -s tests -p \"test_*.py\"",
+    "test:release": "node --test tests-js/package-contract.test.mjs tests-js/rendering.test.mjs tests-js/release-build.release.mjs",
+    "test": "npm run build && npm run test:js && npm run test:py",
+    "package": "npm test && npm run build:release && npm run test:release && npm run test:py && python tools/build_addon.py"
+  },
+  "dependencies": {
+    "dompurify": "3.4.12",
+    "highlight.js": "11.11.1",
+    "katex": "0.16.40",
+    "marked": "18.0.6"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1",
+    "jsdom": "29.1.1"
+  }
+}
