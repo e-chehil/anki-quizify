@@ -1,0 +1,5 @@
+node_modules/
+**/__pycache__/
+*.py[cod]
+*.building
+quizify_addon/user_files/assets/

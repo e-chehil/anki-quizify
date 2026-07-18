@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="./_quizify.css">
+
+<div class="quizify-stage">
+  <article class="container" data-quizify-side="back" dir="auto">
+    <header class="quizify-card-header">
+      <div class="quizify-deck"><span class="quizify-deck-mark" aria-hidden="true">Q</span><span>{{Deck}}</span></div>
+      <div class="quizify-side-label"><span aria-hidden="true"></span>Answer</div>
+    </header>
+    <main id="note-container">
+      <section id="front" class="quizify-field quizify-side-content quizify-question-context"><!-- quizify-source:start:front -->{{Front}}<!-- quizify-source:end:front --></section>
+      <div id="answer" role="separator"><span>Answer</span></div>
+      <section id="back" class="quizify-field quizify-side-content quizify-answer-content"><!-- quizify-source:start:back -->{{Back}}<!-- quizify-source:end:back --></section>
+    </main>
+    <footer class="quizify-tags">{{clickable:Tags}}</footer>
+  </article>
+</div>
+
+<script src="./_persistence.js"></script>
+<script src="./_quizify.js"></script>
+<script>window.Quizify.boot({ side: "back" });</script>

@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+*.ankiaddon binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
