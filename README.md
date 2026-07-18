@@ -70,10 +70,8 @@ Anki Quizify 是一个 Anki 加载项和卡片模板项目。它让你在 Anki �
 
 ## 安装到 Anki
 
-推荐安装已构建的 [`quizify_markdown.ankiaddon`](quizify_addon/quizify_markdown.ankiaddon)：
-
 1. 打开 Anki 桌面端，进入 `工具` -> `插件`。
-2. 选择“从文件安装”，打开 `quizify_markdown.ankiaddon`。
+2. 选择“从文件安装”，打开 `quizify_markdown.ankiaddon`（下载链接见结尾处）。
 3. 重启 Anki，并进入需要使用 Quizify 的用户资料（profile）。
 4. 打开 `工具` -> `Quizify Markdown`，执行“校验并重新同步媒体”。
 5. 如果使用多个用户资料，请分别打开并完成第 4 步。
