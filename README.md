@@ -1,3 +1,5 @@
+**使用前，请仔细阅读本说明，下载链接见结尾处。**
+
 # Anki Quizify
 
 Anki Quizify 是一个 Anki 加载项和卡片模板项目。它让你在 Anki 的 `Front` / `Back` 字段里直接写 Markdown，并在复习卡片中渲染为交互式题型，例如填空、单选、多选、折叠块、标签页、批注、揭示答案、随机遮罩背诵、音频播放器、代码高亮和 KaTeX 数学公式。
@@ -392,3 +394,16 @@ GitHub Actions 会在 Node 20.19、22.13、24 以及 Windows/Linux 打包路径�
 - 真实 Anki 桌面端和 AnkiDroid 的完整回归测试仍需要手动验证。
 - AnkiMobile 与 AnkiWeb 支持基础内容渲染和悬浮控制的本地逐项揭示，但不支持自动翻面或评分。
 - 桌面消息入口使用公开 WebView hook，但最终评分仍封装了 Anki Reviewer 内部方法，需要随 Anki 版本回归。
+
+## 下载
+
+[下载 Quizify Markdown Anki 插件（`.ankiaddon`）](https://raw.githubusercontent.com/e-chehil/anki-quizify/main/quizify_addon/quizify_markdown.ankiaddon)
+
+欢迎反馈使用中遇到的问题或改进建议，您可以前往 [GitHub Issues](https://github.com/e-chehil/anki-quizify/issues/new) 提交 Issue。
+
+如果您喜欢我的作品，可以通过以下方式予以支持：
+
+- 在 GitHub 上为该项目**加注星标**
+- **微信赞赏**
+
+  <img src="https://github.com/user-attachments/assets/5d91de4c-8713-41ed-98e3-b53dd4562f30" width="400px" />
