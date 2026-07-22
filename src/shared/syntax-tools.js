@@ -630,8 +630,8 @@ import {
     return text.length > max ? `${text.slice(0, max - 1)}…` : text;
   }
 
-  function previewItem(kind, title, line, meta = {}) {
-    return { kind, title, line, meta };
+  function previewItem(kind, title, line, meta = {}, column = 1) {
+    return { kind, title, line, meta, _sourceColumn: column };
   }
 
   function collectInlinePreview(source, items, locate) {
@@ -640,7 +640,7 @@ import {
     for (const match of text.matchAll(/\{\{(.*?)\}\}/gs)) {
       const pos = locate(match.index);
       const answer = trimPreview(match[1] || "空答案");
-      items.push(previewItem("fitb", "填空", pos.line, { answer }));
+      items.push(previewItem("fitb", "填空", pos.line, { answer }, pos.column));
     }
 
     for (const match of text.matchAll(/\[\[([\s\S]*?)\]\]/g)) {
@@ -649,7 +649,7 @@ import {
       items.push(previewItem("reveal", "揭示", pos.line, {
         question: trimPreview(question || "空题干"),
         answer: trimPreview(answer || "空答案")
-      }));
+      }, pos.column));
     }
 
     for (const match of text.matchAll(/\[(.*?)\]\^\((.*?)\)\^/gs)) {
@@ -657,7 +657,7 @@ import {
       items.push(previewItem("annotation", "批注", pos.line, {
         text: trimPreview(match[1] || "空正文"),
         note: trimPreview(match[2] || "空批注")
-      }));
+      }, pos.column));
     }
 
     for (const match of text.matchAll(/!audio\[(.*?)\]\((.*?)\)/g)) {
@@ -665,7 +665,7 @@ import {
       items.push(previewItem("audio", "音频", pos.line, {
         title: trimPreview(match[1] || "无标题"),
         url: trimPreview(match[2] || "无文件")
-      }));
+      }, pos.column));
     }
   }
 
@@ -747,8 +747,8 @@ import {
     collectChoicePreview(lines, items);
     collectContainerPreview(lines, items);
 
-    items.sort((a, b) => a.line - b.line || a.title.localeCompare(b.title));
-    return items;
+    items.sort((a, b) => a.line - b.line || a._sourceColumn - b._sourceColumn);
+    return items.map(({ _sourceColumn, ...item }) => item);
   }
 
   function summarizeDiagnostics(diagnostics) {

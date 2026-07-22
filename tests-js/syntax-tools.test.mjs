@@ -135,13 +135,26 @@ B. Beta
   assert.deepEqual(
     preview.map(({ kind, line }) => ({ kind, line })),
     [
-      { kind: "reveal", line: 1 },
       { kind: "fitb", line: 1 },
+      { kind: "reveal", line: 1 },
       { kind: "audio", line: 2 },
       { kind: "collapse", line: 8 },
       { kind: "single", line: 11 }
     ]
   );
+});
+
+test("same-line preview ordering follows source positions instead of locale collation", () => {
+  for (const [source, expected] of [
+    ["{{fill}} then [[reveal]]", ["fitb", "reveal"]],
+    ["[[reveal]] then {{fill}}", ["reveal", "fitb"]]
+  ]) {
+    assert.deepEqual(
+      syntax.collectQuizifyPreview(source).map((item) => item.kind),
+      expected,
+      source
+    );
+  }
 });
 
 test("an unmatched math opener does not expose markers in a later valid formula", () => {
