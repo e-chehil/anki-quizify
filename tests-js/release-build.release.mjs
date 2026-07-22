@@ -80,7 +80,8 @@ test("release bundles are minified and stay within size budgets", async () => {
     "_quizify.css": 70_000,
     "web/editor.js": 50_000,
     "web/editor-preview.js": 750_000,
-    "web/syntax-tools.js": 20_000,
+    // Includes the shared ownership-aware math scanner used by diagnostics.
+    "web/syntax-tools.js": 40_000,
     "web/editor.css": 25_000
   };
 

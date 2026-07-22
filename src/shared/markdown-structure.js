@@ -1,6 +1,11 @@
 export function fenceMarker(line) {
-  const match = /^(?: {0,3})(`{3,}|~{3,})/.exec(String(line ?? ""));
-  return match ? { char: match[1][0], length: match[1].length } : null;
+  const match = /^(?: {0,3})(`{3,}|~{3,})([^\r\n]*)$/.exec(
+    String(line ?? "")
+  );
+  if (!match || (match[1][0] === "`" && match[2].includes("`"))) {
+    return null;
+  }
+  return { char: match[1][0], length: match[1].length };
 }
 
 export function closesFence(line, fence) {

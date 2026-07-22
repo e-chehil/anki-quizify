@@ -6,7 +6,7 @@ Anki Quizify 是一个 Anki 加载项和卡片模板项目。它让你在 Anki �
 
 当前主线实现位于 `quizify_addon/`。仓库根目录的旧模板和资源已经退役：`front.html` / `back.html` 只保留失败关闭的迁移提示，旧 `_myquizify.js` / `_styles.css` 不再提供；实际加载项只使用 `quizify_addon/templates/`、`quizify_addon/_quizify.js` 和 `quizify_addon/_quizify.css`。
 
-当前版本为 **1.0.15**。本版修复 AnkiDroid 正式 JavaScript API 的真实注入识别，恢复仅限 Android 的安全兼容入口，并为旧 WebView 增加 Touch/Mouse/Click 手势后备路径；1.0.14 的紧凑自适应编辑器工具栏保持不变。
+当前版本为 **1.0.16**。本版为四种 KaTeX 定界符增加 Markdown 前置保护，避免公式内容被上下标、填空、揭示、链接、表格等扩展提前解析，并补充公式资源上限和宏定义安全限制；1.0.15 的 AnkiDroid 正式 API 与旧 WebView 兼容修复保持不变。
 
 面向用户的发布说明可见 [`docs/release-description.md`](docs/release-description.md)。
 

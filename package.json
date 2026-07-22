@@ -1,6 +1,6 @@
 {
   "name": "anki-quizify",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",

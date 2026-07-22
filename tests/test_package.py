@@ -72,7 +72,7 @@ class PackageTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertEqual(manifest["human_version"], version)
         self.assertEqual(manifest["min_point_version"], 250900)
-        self.assertEqual(manifest["mod"], 2026071806)
+        self.assertEqual(manifest["mod"], 2026072209)
         self.assertEqual(project["version"], version)
         self.assertEqual(lock["version"], version)
         self.assertEqual(lock["packages"][""]["version"], version)

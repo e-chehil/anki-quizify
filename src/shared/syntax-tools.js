@@ -1,9 +1,11 @@
 /* Shared Quizify authoring syntax analyzer. */
 import {
-  fenceMarker,
-  nextFence,
   uniqueSortedLetters
 } from "./markdown-structure.js";
+import {
+  maskMarkdownFencedCode,
+  maskMarkdownInlineContexts
+} from "./math.js";
 (function (root, factory) {
   const api = factory();
 
@@ -271,31 +273,108 @@ import {
   }
 
   function maskFencedCode(source) {
-    let fence = null;
-    return String(source || "")
-      .split("\n")
-      .map((line) => {
-        const wasFenced = Boolean(fence);
-        const next = nextFence(line, fence);
-        const isFenceBoundary = next !== fence;
-        fence = next;
-        return wasFenced || isFenceBoundary ? " ".repeat(line.length) : line;
-      })
-      .join("\n");
+    return maskMarkdownFencedCode(source);
+  }
+
+  function maskSafeLinkInteractiveLabels(source, protectedSource) {
+    const text = String(source || "");
+    const masked = String(protectedSource || "");
+    if (text.length !== masked.length) return masked;
+
+    const output = masked.split("");
+    const brackets = [];
+    const interactivePatterns = [
+      /\{\{[\s\S]*?\}\}/g,
+      /\[\[[\s\S]*?\]\]/g,
+      /\[(.*?)\]\^\((.*?)\)\^/gs
+    ];
+
+    function escapedAt(index) {
+      let slashes = 0;
+      while (index > 0 && text[--index] === "\\") slashes++;
+      return slashes % 2 === 1;
+    }
+
+    function maskLabelRange(start, end) {
+      const label = masked.slice(start, end);
+      for (const pattern of interactivePatterns) {
+        pattern.lastIndex = 0;
+        for (const match of label.matchAll(pattern)) {
+          const matchStart = start + match.index;
+          const matchEnd = matchStart + match[0].length;
+          for (let index = matchStart; index < matchEnd; index++) {
+            if (output[index] !== "\r" && output[index] !== "\n") {
+              output[index] = "x";
+            }
+          }
+        }
+      }
+    }
+
+    // Reference definitions are Markdown metadata and never become visible
+    // field content. Keep Quizify-looking text in their labels, destinations,
+    // and titles out of diagnostics/previews just like the renderer does.
+    const referenceDefinition = /^ {0,3}\[((?:\\[\s\S]|[^\[\]\\])+?)\]:[ \t]*(?:<[^>\r\n]*>|[^\s<>]+)(?:[ \t]+(?:"(?:\\.|[^"\\\r\n])*"|'[^'\r\n]*'|\([^()\r\n]*\)))?[ \t]*(?=\r?$)/gm;
+    for (const match of text.matchAll(referenceDefinition)) {
+      const start = match.index;
+      const end = start + match[0].length;
+      for (let index = start; index < end; index++) {
+        if (output[index] !== "\r" && output[index] !== "\n") {
+          output[index] = "x";
+        }
+      }
+    }
+
+    for (let index = 0; index < text.length; index++) {
+      if (text[index] === "\\") {
+        index++;
+        continue;
+      }
+      if (text[index] === "[") {
+        brackets.push(index);
+        continue;
+      }
+      if (text[index] !== "]" || !brackets.length) continue;
+
+      const labelOpen = brackets.pop();
+      if (
+        masked[labelOpen] === text[labelOpen] ||
+        masked[index] === text[index]
+      ) {
+        // The shared Markdown ownership pass masks these boundaries only for
+        // a real link. Malformed link-looking text must remain diagnosable.
+        continue;
+      }
+      if (
+        (labelOpen > 0 &&
+          text[labelOpen - 1] === "!" &&
+          !escapedAt(labelOpen - 1)) ||
+        (text.slice(Math.max(0, labelOpen - 6), labelOpen) === "!audio" &&
+          !escapedAt(labelOpen - 6))
+      ) {
+        continue;
+      }
+
+      // The review renderer makes only interactive Quizify controls literal
+      // inside an <a>. Preserve math, code and other inline ownership already
+      // decided by maskMarkdownInlineContexts instead of hiding the whole label.
+      maskLabelRange(labelOpen + 1, index);
+    }
+
+    return output.join("");
+  }
+
+  function protectAuthoringSyntax(source) {
+    const fenced = maskFencedCode(source);
+    const inline = maskMarkdownInlineContexts(fenced);
+    return maskSafeLinkInteractiveLabels(fenced, inline);
   }
 
   function choiceOptionsFromLines(lines) {
     const options = [];
     const seen = new Set();
-    let fence = null;
 
     for (const optionLine of lines) {
-      const next = nextFence(optionLine.text, fence);
-      if (fence || next) {
-        fence = next;
-        continue;
-      }
-
       const match = /^([A-Za-z])\. ?(.+)$/.exec(optionLine.text.trim());
       if (!match) continue;
 
@@ -366,16 +445,8 @@ import {
 
   function analyzeChoiceBlocks(lines, diagnostics) {
     let index = 0;
-    let fence = null;
 
     while (index < lines.length) {
-      const next = nextFence(lines[index], fence);
-      if (fence || next) {
-        fence = next;
-        index++;
-        continue;
-      }
-
       if (!/^;;;\s*$/.test(lines[index])) {
         index++;
         continue;
@@ -383,15 +454,13 @@ import {
 
       const startLine = index + 1;
       const optionLines = [];
-      let blockFence = null;
       index++;
 
       while (
         index < lines.length &&
-        (blockFence || !/^;;;[A-Za-z]*\s*$/.test(lines[index].trim()))
+        !/^;;;[A-Za-z]*\s*$/.test(lines[index].trim())
       ) {
         optionLines.push({ text: lines[index], line: index + 1 });
-        blockFence = nextFence(lines[index], blockFence);
         index++;
       }
 
@@ -439,17 +508,10 @@ import {
     const collapseStack = [];
     let tabStart = null;
     let tabCount = 0;
-    let fence = null;
 
     lines.forEach((line, idx) => {
       const lineNo = idx + 1;
       const trimmed = line.trim();
-
-      const next = nextFence(line, fence);
-      if (fence || next) {
-        fence = next;
-        return;
-      }
 
       if (/^:::\s+\S/.test(trimmed)) {
         collapseStack.push(lineNo);
@@ -489,17 +551,10 @@ import {
 
   function analyzeReciteBlocks(lines, diagnostics) {
     const stack = [];
-    let fence = null;
 
     lines.forEach((line, idx) => {
       const lineNo = idx + 1;
       const trimmed = line.trim();
-      const next = nextFence(line, fence);
-      if (fence || next) {
-        fence = next;
-        return;
-      }
-
       const opener = /^::::\s+recite(?:\s+(.*?))?\s*$/i.exec(trimmed);
       if (opener) {
         const entry = { line: lineNo, markers: 0 };
@@ -553,15 +608,15 @@ import {
 
   function analyzeQuizifySyntax(source) {
     const text = String(source || "");
-    const inlineText = maskFencedCode(text);
+    const protectedText = protectAuthoringSyntax(text);
     const locate = createLineLocator(text);
     const diagnostics = [];
-    const lines = text.split(/\r?\n/);
+    const lines = protectedText.split(/\r?\n/);
 
-    analyzeFillBlanks(inlineText, diagnostics, locate);
-    analyzeReveal(inlineText, diagnostics, locate);
-    analyzeAnnotations(inlineText, diagnostics, locate);
-    analyzeAudio(inlineText, diagnostics, locate);
+    analyzeFillBlanks(protectedText, diagnostics, locate);
+    analyzeReveal(protectedText, diagnostics, locate);
+    analyzeAnnotations(protectedText, diagnostics, locate);
+    analyzeAudio(protectedText, diagnostics, locate);
     analyzeChoiceBlocks(lines, diagnostics);
     analyzeContainers(lines, diagnostics);
     analyzeReciteBlocks(lines, diagnostics);
@@ -580,7 +635,7 @@ import {
   }
 
   function collectInlinePreview(source, items, locate) {
-    const text = maskFencedCode(source);
+    const text = String(source || "");
 
     for (const match of text.matchAll(/\{\{(.*?)\}\}/gs)) {
       const pos = locate(match.index);
@@ -616,16 +671,8 @@ import {
 
   function collectChoicePreview(lines, items) {
     let index = 0;
-    let fence = null;
 
     while (index < lines.length) {
-      const next = nextFence(lines[index], fence);
-      if (fence || next) {
-        fence = next;
-        index++;
-        continue;
-      }
-
       if (!/^;;;\s*$/.test(lines[index])) {
         index++;
         continue;
@@ -633,15 +680,13 @@ import {
 
       const startLine = index + 1;
       const optionLines = [];
-      let blockFence = null;
       index++;
 
       while (
         index < lines.length &&
-        (blockFence || !/^;;;[A-Za-z]*\s*$/.test(lines[index].trim()))
+        !/^;;;[A-Za-z]*\s*$/.test(lines[index].trim())
       ) {
         optionLines.push({ text: lines[index], line: index + 1 });
-        blockFence = nextFence(lines[index], blockFence);
         index++;
       }
 
@@ -659,18 +704,9 @@ import {
   }
 
   function collectContainerPreview(lines, items) {
-    let fence = null;
-
     lines.forEach((line, idx) => {
       const lineNo = idx + 1;
       const collapse = /^:::\s+(.+?)\s*$/.exec(line.trim());
-      const next = nextFence(line, fence);
-
-      if (fence || next) {
-        fence = next;
-        return;
-      }
-
       if (collapse) {
         items.push(previewItem("collapse", "折叠", lineNo, {
           title: trimPreview(collapse[1])
@@ -702,11 +738,12 @@ import {
 
   function collectQuizifyPreview(source) {
     const text = String(source || "");
-    const lines = text.split(/\r?\n/);
+    const protectedText = protectAuthoringSyntax(text);
+    const lines = protectedText.split(/\r?\n/);
     const locate = createLineLocator(text);
     const items = [];
 
-    collectInlinePreview(text, items, locate);
+    collectInlinePreview(protectedText, items, locate);
     collectChoicePreview(lines, items);
     collectContainerPreview(lines, items);
 

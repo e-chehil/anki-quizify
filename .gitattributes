@@ -4,3 +4,9 @@
 *.woff binary
 *.woff2 binary
 *.ttf binary
+
+# Minified highlight.js grammars contain significant whitespace at physical
+# line endings inside template literals. These generated bundles are verified
+# by release tests instead of Git's source whitespace heuristic.
+quizify_addon/_quizify.js whitespace=-trailing-space
+quizify_addon/web/editor-preview.js whitespace=-trailing-space
