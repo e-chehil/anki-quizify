@@ -1,8 +1,9 @@
-import { renderMathInElement } from "../review/dependencies.js";
+import { katex } from "../review/dependencies.js";
 import { highlightCodeElement } from "../review/code.js";
 import { MAX_FIELD_BYTES, utf8Size } from "../review/security.js";
 import { enhanceOutlineLists } from "../review/outline.js";
 import { enhanceMarkdownTables } from "../review/tables.js";
+import { renderMathPlaceholders } from "../shared/math.js";
 import {
   disposePreviewInteractions,
   initPreviewInteractions
@@ -175,13 +176,7 @@ function renderPreview(force = false) {
     enhanceOutlineLists(field);
     enhanceMarkdownTables(field);
     field.querySelectorAll("pre > code").forEach(highlightCodeElement);
-    renderMathInElement(field, {
-      delimiters: [
-        { left: "$$", right: "$$", display: true },
-        { left: "$", right: "$", display: false }
-      ],
-      throwOnError: false
-    });
+    renderMathPlaceholders(field, katex);
     initPreviewInteractions(field);
   } catch (error) {
     disposePreviewInteractions(field);

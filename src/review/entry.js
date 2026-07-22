@@ -1,8 +1,9 @@
 import "./orchestrator.js";
-import { markedApi, renderMathInElement } from "./dependencies.js";
+import { katex, markedApi } from "./dependencies.js";
 import { highlightCodeElement } from "./code.js";
 import { enhanceOutlineLists } from "./outline.js";
 import { enhanceMarkdownTables } from "./tables.js";
+import { renderMathPlaceholders } from "../shared/math.js";
 
 const legacy = globalThis.myquizify;
 
@@ -29,13 +30,7 @@ function enhanceMath() {
   const host = document.getElementById("note-container");
   if (!host) return;
   try {
-    renderMathInElement(host, {
-      delimiters: [
-        { left: "$$", right: "$$", display: true },
-        { left: "$", right: "$", display: false }
-      ],
-      throwOnError: false
-    });
+    renderMathPlaceholders(host, katex);
   } catch (error) {
     console.warn("Quizify math rendering failed", error);
   }
@@ -62,7 +57,7 @@ function boot({ side = "front" } = {}) {
 }
 
 const api = {
-  version: "1.0.15",
+  version: "1.0.16",
   boot,
   destroy,
   enhanceOutlineLists,

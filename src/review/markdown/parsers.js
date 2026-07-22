@@ -3,6 +3,9 @@ import {
   nextFence,
   uniqueSortedLetters
 } from "../../shared/markdown-structure.js";
+import {
+  findDisplayMathEndOnLine
+} from "../../shared/math.js";
 
 export function createParserTools(state) {
   function readLine(src, offset) {
@@ -15,6 +18,10 @@ export function createParserTools(state) {
       raw: src.slice(offset, end + 1),
       next: end + 1
     };
+  }
+
+  function validMathBlockEnd(src, offset) {
+    return findDisplayMathEndOnLine(src, offset);
   }
 
   function trimBlankEdges(lines) {
@@ -48,16 +55,28 @@ export function createParserTools(state) {
   function parseChoiceOptions(raw, lexer) {
     const options = [];
     const seen = new Set();
+    const source = String(raw || "");
+    let offset = 0;
     let fence = null;
+    let mathEnd = -1;
 
-    for (const line of String(raw || "").split(/\r?\n/)) {
-      const next = nextFence(line, fence);
+    while (offset < source.length) {
+      const continuingMath = !fence && offset < mathEnd;
+      const detectedMathEnd = !fence && !continuingMath
+        ? validMathBlockEnd(source, offset)
+        : -1;
+      const entry = readLine(source, offset);
+      offset = entry.next;
+      if (continuingMath) continue;
+      if (detectedMathEnd > mathEnd) mathEnd = detectedMathEnd;
+
+      const next = nextFence(entry.line, fence);
       if (fence || next) {
         fence = next;
         continue;
       }
 
-      const match = /^([A-Za-z])\. ?(.+)$/.exec(line.trim());
+      const match = /^([A-Za-z])\. ?(.+)$/.exec(entry.line.trim());
       if (!match) continue;
 
       const description = match[2].trim();
@@ -87,11 +106,17 @@ export function createParserTools(state) {
 
     let offset = opener.next;
     let fence = null;
+    let mathEnd = -1;
     const optionLines = [];
 
     while (offset < src.length) {
+      const insideMath =
+        !fence &&
+        (offset < mathEnd ||
+          ((mathEnd = validMathBlockEnd(src, offset)) > offset));
       const entry = readLine(src, offset);
-      const close = !fence && /^;;;([A-Za-z]+)\s*$/.exec(entry.line);
+      const close =
+        !fence && !insideMath && /^;;;([A-Za-z]+)\s*$/.exec(entry.line);
       offset = entry.next;
 
       if (close) {
@@ -106,7 +131,7 @@ export function createParserTools(state) {
       }
 
       optionLines.push(entry.line);
-      fence = nextFence(entry.line, fence);
+      if (!insideMath) fence = nextFence(entry.line, fence);
     }
 
     return null;
@@ -122,10 +147,20 @@ export function createParserTools(state) {
     let lines = [];
     let offset = first.next;
     let fence = null;
+    let mathEnd = -1;
 
     while (offset < src.length) {
+      const insideMath =
+        !fence &&
+        (offset < mathEnd ||
+          ((mathEnd = validMathBlockEnd(src, offset)) > offset));
       const entry = readLine(src, offset);
       offset = entry.next;
+
+      if (insideMath) {
+        lines.push(entry.line);
+        continue;
+      }
 
       if (fence) {
         lines.push(entry.line);
@@ -200,12 +235,19 @@ export function createParserTools(state) {
     let depth = 1;
     let offset = opener[0].length;
     let fence = null;
+    let mathEnd = -1;
     const lines = [];
 
     while (depth > 0 && offset < src.length) {
+      const insideMath =
+        !fence &&
+        (offset < mathEnd ||
+          ((mathEnd = validMathBlockEnd(src, offset)) > offset));
       const entry = readLine(src, offset);
       offset = entry.next;
-      if (fence) {
+      if (insideMath) {
+        lines.push(entry.line);
+      } else if (fence) {
         lines.push(entry.line);
         fence = nextFence(entry.line, fence);
       } else if (fenceMarker(entry.line)) {

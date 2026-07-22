@@ -21,6 +21,10 @@ import {
   decodeAnkiFieldHtml,
   readAnkiFieldSource
 } from "../shared/anki-field.js";
+import {
+  hasExcessiveMathDelimiters,
+  protectMathPipes
+} from "../shared/math.js";
 
 (function (root, factory) {
   const api = factory(root || {});
@@ -54,6 +58,7 @@ import {
     canArmReciteTouchScrub,
     canReciteScrub,
     createQuizifyExtensions,
+    createQuizifyRenderer,
     escapeHtml,
     isReciteScrubMove,
     markerStart,
@@ -91,11 +96,26 @@ import {
     }
 
     const extensions = createQuizifyExtensions();
+    const renderer = createQuizifyRenderer();
+
+    function renderWithProtectedMath(parse, source) {
+      const text = String(source ?? "");
+      if (hasExcessiveMathDelimiters(text)) {
+        return sanitizeRenderedHtml(
+          '<p class="quizify-math-limit">公式定界符过多，已按纯文本显示以保护页面性能。</p>' +
+            `<pre class="quizify-math-limit-source">${escapeHtml(text)}</pre>`
+        );
+      }
+      const protectedMath = protectMathPipes(text);
+      const html = parse(protectedMath.source);
+      return sanitizeRenderedHtml(protectedMath.restore(html));
+    }
 
     if (typeof markedApi.Marked === "function") {
       const instance = new markedApi.Marked();
-      instance.use({ extensions });
-      state.markdownRenderer = (source) => sanitizeRenderedHtml(instance.parse(source));
+      instance.use({ extensions, renderer });
+      state.markdownRenderer = (source) =>
+        renderWithProtectedMath((value) => instance.parse(value), source);
       state.markedApi = markedApi;
       state.usedIndependentMarked = true;
       return state.markdownRenderer;
@@ -103,9 +123,10 @@ import {
 
     if (typeof markedApi.use === "function" && typeof markedApi.parse === "function") {
       if (state.markedApi !== markedApi) {
-        markedApi.use({ extensions });
+        markedApi.use({ extensions, renderer });
       }
-      state.markdownRenderer = (source) => sanitizeRenderedHtml(markedApi.parse(source));
+      state.markdownRenderer = (source) =>
+        renderWithProtectedMath((value) => markedApi.parse(value), source);
       state.markedApi = markedApi;
       state.usedIndependentMarked = false;
       return state.markdownRenderer;
@@ -426,6 +447,7 @@ import {
     quizifyExtensions: createQuizifyExtensions(),
     configureQuizifyMarked,
     createQuizifyExtensions,
+    createQuizifyRenderer,
     saveUserAnswers,
     loadUserAnswers,
     clearUserAnswers,

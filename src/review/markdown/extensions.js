@@ -2,6 +2,14 @@ import {
   fenceMarker,
   nextFence
 } from "../../shared/markdown-structure.js";
+import {
+  KATEX_BLOCK_DELIMITERS,
+  KATEX_DELIMITERS,
+  MATH_PLACEHOLDER_CLASS,
+  findDisplayMathEndOnLine,
+  findMathRanges,
+  matchMathDelimiter
+} from "../../shared/math.js";
 import { createParserTools } from "./parsers.js";
 
 export function createMarkdownTools(state) {
@@ -16,6 +24,356 @@ export function createMarkdownTools(state) {
 
   function escapeAttr(value) {
     return escapeHtml(value).replace(/\n/g, "&#10;");
+  }
+
+  function mathPlaceholder(match, forceInline = false) {
+    const tag = forceInline || !match.display ? "span" : "div";
+    return (
+      `<${tag} class="${MATH_PLACEHOLDER_CLASS}" data-quizify-math="${match.display ? "display" : "inline"}" ` +
+      `data-quizify-math-left="${escapeAttr(match.left)}" data-quizify-math-right="${escapeAttr(match.right)}">` +
+      `${escapeHtml(match.text)}</${tag}>`
+    );
+  }
+
+  function validMathBlockEnd(source, offset) {
+    return findDisplayMathEndOnLine(source, offset);
+  }
+
+  const ignoredRawMathElements = new Set([
+    "code",
+    "pre",
+    "script",
+    "style",
+    "textarea",
+    "option",
+    "noscript",
+    "kbd",
+    "title",
+    "template"
+  ]);
+  const voidElements = new Set([
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "source",
+    "track",
+    "wbr"
+  ]);
+  const rawHtmlTagHeadPattern = /<(\/)?([A-Za-z][A-Za-z0-9:-]*)(?=[\s/>])/y;
+
+  function readRawHtmlMarkup(source, start) {
+    const special = [
+      ["<!--", "-->"],
+      ["<![CDATA[", "]]>"]
+    ].find(([left]) => source.startsWith(left, start));
+    if (special) {
+      const end = source.indexOf(special[1], start + special[0].length);
+      return { end: end < 0 ? source.length : end + special[1].length };
+    }
+
+    rawHtmlTagHeadPattern.lastIndex = start;
+    const head = rawHtmlTagHeadPattern.exec(source);
+    const declaration = !head && source[start] === "<" &&
+      (source[start + 1] === "!" || source[start + 1] === "?");
+    if (!head && !declaration) return;
+
+    let quote = "";
+    let end = source.length;
+    for (let index = start + 2; index < source.length; index++) {
+      const character = source[index];
+      if (quote) {
+        if (character === quote) quote = "";
+      } else if (character === '"' || character === "'") {
+        quote = character;
+      } else if (character === ">") {
+        end = index + 1;
+        break;
+      }
+    }
+
+    if (!head) return { end };
+    const name = head[2].toLowerCase();
+    return {
+      end,
+      name,
+      closing: Boolean(head[1]),
+      // In the HTML syntax used by Marked and the browser, a trailing slash
+      // does not self-close a non-void element (`<code/>` still opens code).
+      selfClosing: voidElements.has(name)
+    };
+  }
+
+  function renderMathInRawHtml(source) {
+    const text = String(source ?? "");
+    const stack = [];
+    const positions = new Map();
+    const ignoredTextRanges = [];
+    let ignoredDepth = 0;
+    let textStart = 0;
+    let index = 0;
+
+    const removeStackFrom = (index) => {
+      while (stack.length > index) {
+        const name = stack.pop();
+        const entries = positions.get(name);
+        entries?.pop();
+        if (!entries?.length) positions.delete(name);
+        if (ignoredRawMathElements.has(name)) ignoredDepth--;
+      }
+    };
+
+    const pushStack = (name) => {
+      const entries = positions.get(name) || [];
+      entries.push(stack.length);
+      positions.set(name, entries);
+      stack.push(name);
+    };
+
+    while (index < text.length) {
+      if (text[index] !== "<") {
+        index++;
+        continue;
+      }
+      const markup = readRawHtmlMarkup(text, index);
+      if (!markup) {
+        index++;
+        continue;
+      }
+
+      if (ignoredDepth > 0 && textStart < index) {
+        ignoredTextRanges.push({ start: textStart, end: index });
+      }
+      if (markup.name) {
+        if (markup.closing) {
+          const entries = positions.get(markup.name);
+          const parent = entries?.length ? entries[entries.length - 1] : -1;
+          if (parent >= 0) removeStackFrom(parent);
+        } else if (!markup.selfClosing) {
+          if (
+            markup.name === "option" &&
+            stack[stack.length - 1] === "option"
+          ) {
+            removeStackFrom(stack.length - 1);
+          }
+          pushStack(markup.name);
+          if (ignoredRawMathElements.has(markup.name)) ignoredDepth++;
+        }
+      }
+      index = markup.end;
+      textStart = index;
+    }
+    if (ignoredDepth > 0 && textStart < text.length) {
+      ignoredTextRanges.push({ start: textStart, end: text.length });
+    }
+
+    // Resolve formulas once against the complete raw-HTML token. Restarting
+    // the dollar scanner for every text node can reuse the rejected closer of
+    // `$a <span>…</span> b$` as an opener and steal a later valid formula.
+    const matches = findMathRanges(text);
+    let ignoredIndex = 0;
+    let cursor = 0;
+    let rendered = "";
+    for (const match of matches) {
+      while (ignoredTextRanges[ignoredIndex]?.end <= match.index) ignoredIndex++;
+      const ignored = ignoredTextRanges[ignoredIndex];
+      if (ignored && ignored.start <= match.index && match.end <= ignored.end) {
+        continue;
+      }
+      rendered += text.slice(cursor, match.index) + mathPlaceholder(match, true);
+      cursor = match.end;
+    }
+    return rendered + text.slice(cursor);
+  }
+
+  const builtinInlineTokens = new Set([
+    "br",
+    "checkbox",
+    "codespan",
+    "del",
+    "em",
+    "escape",
+    "html",
+    "image",
+    "link",
+    "strong",
+    "text"
+  ]);
+
+  function literalizeImageAlt(tokens = []) {
+    return tokens.map((token) => {
+      if (!builtinInlineTokens.has(token.type)) {
+        const literal = String(token.raw ?? `${token.left || ""}${token.text || ""}${token.right || ""}`);
+        return { type: "text", raw: literal, text: literal, escaped: false };
+      }
+      if (Array.isArray(token.tokens)) {
+        token.tokens = literalizeImageAlt(token.tokens);
+      }
+      return token;
+    });
+  }
+
+  function literalizeInteractiveLinkTokens(tokens = []) {
+    const interactive = new Set(["fitb", "reveal", "annotation"]);
+    return tokens.map((token) => {
+      if (interactive.has(token.type)) {
+        const literal = String(token.raw ?? token.text ?? "");
+        return { type: "text", raw: literal, text: literal, escaped: false };
+      }
+      if (Array.isArray(token.tokens)) {
+        token.tokens = literalizeInteractiveLinkTokens(token.tokens);
+      }
+      return token;
+    });
+  }
+
+  function maskAtomicBracketsForBuiltinLink(source) {
+    const text = String(source ?? "");
+    const labelStart = text.startsWith("![")
+      ? 2
+      : text.startsWith("[")
+        ? 1
+        : -1;
+    if (labelStart < 0) {
+      return { source: text, restore: (value) => String(value ?? "") };
+    }
+
+    let depth = 1;
+    let labelEnd = -1;
+    for (let index = labelStart; index < text.length; index++) {
+      if (text[index] === "\\") {
+        index++;
+      } else if (text[index] === "[") {
+        depth++;
+      } else if (text[index] === "]" && --depth === 0) {
+        labelEnd = index + 1;
+        break;
+      }
+    }
+    if (labelEnd < 0) {
+      return { source: text, restore: (value) => String(value ?? "") };
+    }
+
+    const label = text.slice(0, labelEnd);
+    const mathRanges = findMathRanges(label)
+      .filter((match) => match.index >= labelStart && match.end < labelEnd)
+      .map((match) => ({ start: match.index, end: match.end }));
+    const revealPattern = /\[\[(.*?)\|\|(.*?)\]\]/g;
+    const revealRanges = [];
+    let reveal;
+    while ((reveal = revealPattern.exec(label))) {
+      revealRanges.push({ start: reveal.index, end: reveal.index + reveal[0].length });
+    }
+    if (!mathRanges.length && !revealRanges.length) {
+      return { source: text, restore: (value) => String(value ?? "") };
+    }
+
+    // Marked's built-in link tokenizer supports one nested bracket pair. A
+    // Quizify reveal uses two (`[[question||answer]]`), so an otherwise valid
+    // outer Markdown link is rejected before our safe-link policy can run.
+    // TeX array/index syntax can also exceed that nesting limit. Temporarily
+    // replace only brackets owned by complete math/reveal ranges with unused,
+    // same-width BMP characters. The built-in tokenizer still owns the outer
+    // label and all destination/title parsing.
+    const used = new Set();
+    for (let index = 0; index < label.length; index++) {
+      used.add(label.charCodeAt(index));
+    }
+    const markers = [];
+    for (let code = 0xe000; code <= 0xf8ff && markers.length < 2; code++) {
+      if (!used.has(code)) markers.push(String.fromCharCode(code));
+    }
+    if (markers.length < 2) {
+      return { source: text, restore: (value) => String(value ?? "") };
+    }
+
+    const [openMarker, closeMarker] = markers;
+    // Scanner offsets are UTF-16 code units; split("") preserves that exact
+    // indexing even when an emoji occurs before a bracketed TeX expression.
+    const characters = label.split("");
+    for (const range of [...mathRanges, ...revealRanges]) {
+      for (let index = range.start; index < range.end; index++) {
+        if (characters[index] === "[") characters[index] = openMarker;
+        else if (characters[index] === "]") characters[index] = closeMarker;
+      }
+    }
+    const maskedLabel = characters.join("");
+    if (maskedLabel === label) {
+      return { source: text, restore: (value) => String(value ?? "") };
+    }
+    return {
+      source: maskedLabel + text.slice(labelEnd),
+      restore(value) {
+        return String(value ?? "")
+          .split(openMarker)
+          .join("[")
+          .split(closeMarker)
+          .join("]");
+      }
+    };
+  }
+
+  function tokenizeBuiltinLink(context, src) {
+    const tokenizer = context.lexer.tokenizer;
+    const links = context.lexer.tokens?.links || Object.create(null);
+    const direct = tokenizer.link(src);
+    if (direct) return direct;
+
+    const reference = tokenizer.reflink(src, links);
+    if (reference?.type === "link" || reference?.type === "image") {
+      return reference;
+    }
+
+    const masked = maskAtomicBracketsForBuiltinLink(src);
+    if (masked.source === src) return;
+    let token = tokenizer.link(masked.source);
+    if (!token) {
+      token = tokenizer.reflink(masked.source, links);
+      if (token?.type !== "link" && token?.type !== "image") return;
+    }
+
+    // The mask is code-unit preserving, so the consumed prefix maps exactly
+    // back to the original input. Restore every user-facing string before the
+    // token reaches rendering or sanitization.
+    token.raw = src.slice(0, token.raw.length);
+    token.text = masked.restore(token.text);
+    const seen = new WeakSet();
+    const restoreTokenValues = (value) => {
+      if (!value || typeof value !== "object" || seen.has(value)) return;
+      seen.add(value);
+      for (const [key, child] of Object.entries(value)) {
+        if (typeof child === "string") {
+          value[key] = masked.restore(child);
+        } else {
+          restoreTokenValues(child);
+        }
+      }
+    };
+    restoreTokenValues(token.tokens);
+    return token;
+  }
+
+  function createQuizifyRenderer() {
+    return {
+      html(token) {
+        if (token.block && !token.pre) {
+          const rendered = renderMathInRawHtml(token.text);
+          token.text = rendered;
+          token.raw = rendered;
+        }
+        return false;
+      },
+      image(token) {
+        token.tokens = literalizeImageAlt(token.tokens);
+        return false;
+      }
+    };
   }
 
   const {
@@ -39,6 +397,35 @@ export function createMarkdownTools(state) {
   } = createParserTools(state);
 
   function createQuizifyExtensions() {
+    function inlineExtensionStart(src) {
+      const text = String(src ?? "");
+      for (let index = 0; index < text.length; index++) {
+        const character = text[index];
+        if (
+          character === "\\" ||
+          character === "<" ||
+          character === "!" ||
+          character === "[" ||
+          character === "`" ||
+          character === "*" ||
+          character === "~" ||
+          character === "_"
+        ) {
+          // Marked's own inline text tokenizer already stops at these
+          // boundaries, so it will give every Quizify extension another turn.
+          return;
+        }
+        if (
+          character === "$" ||
+          character === "^" ||
+          (character === "{" && text[index + 1] === "{") ||
+          (character === "=" && text[index + 1] === "=")
+        ) {
+          return index;
+        }
+      }
+    }
+
     const audioIcons = {
       replay:
         '<svg class="audio-icon" viewBox="0 0 24 24" aria-hidden="true">' +
@@ -152,12 +539,19 @@ export function createMarkdownTools(state) {
         let offset = opener[0].length;
         const lines = [];
         let fence = null;
+        let mathEnd = -1;
 
         while (depth > 0 && offset < src.length) {
+          const insideMath =
+            !fence &&
+            (offset < mathEnd ||
+              ((mathEnd = validMathBlockEnd(src, offset)) > offset));
           const entry = readLine(src, offset);
           offset = entry.next;
 
-          if (fence) {
+          if (insideMath) {
+            lines.push(entry.line);
+          } else if (fence) {
             lines.push(entry.line);
             fence = nextFence(entry.line, fence);
           } else if (fenceMarker(entry.line)) {
@@ -241,17 +635,30 @@ export function createMarkdownTools(state) {
       name: "annotation",
       level: "inline",
       childTokens: ["textTokens", "tooltipTokens"],
-      start(src) {
-        return regexStart(src, /\[.*?\]\^\(.*?\)\^/);
-      },
       tokenizer(src) {
-        const match = /^\[(.+?)\]\^\((.+?)\)\^/.exec(src);
-        if (!match) return;
+        if (!src.startsWith("[")) return;
+        let middle = -1;
+        for (let index = 1; index < src.length; index++) {
+          if (src[index] === "\n" || src[index] === "\r" || src[index] === "[") {
+            return;
+          }
+          if (src.startsWith("]^(", index)) {
+            middle = index;
+            break;
+          }
+        }
+        if (middle <= 1) return;
+        const end = src.indexOf(")^", middle + 3);
+        if (
+          end <= middle + 3 ||
+          /[\r\n]/.test(src.slice(middle + 3, end))
+        ) return;
+        const raw = src.slice(0, end + 2);
         return {
           type: "annotation",
-          raw: match[0],
-          textTokens: inlineTokens(this.lexer, match[1]),
-          tooltipTokens: inlineTokens(this.lexer, match[2])
+          raw,
+          textTokens: inlineTokens(this.lexer, src.slice(1, middle)),
+          tooltipTokens: inlineTokens(this.lexer, src.slice(middle + 3, end))
         };
       },
       renderer(token) {
@@ -266,9 +673,6 @@ export function createMarkdownTools(state) {
       name: "highlight",
       level: "inline",
       childTokens: ["tokens"],
-      start(src) {
-        return markerStart(src, "==");
-      },
       tokenizer(src) {
         const match = /^==(?=\S)([^\n]*?\S)==/.exec(src);
         if (!match) return;
@@ -286,9 +690,6 @@ export function createMarkdownTools(state) {
     const fitb = {
       name: "fitb",
       level: "inline",
-      start(src) {
-        return markerStart(src, "{{");
-      },
       tokenizer(src) {
         const match = /^\{\{(.*?)\}\}/.exec(src);
         if (!match) return;
@@ -312,20 +713,44 @@ export function createMarkdownTools(state) {
       name: "reveal",
       level: "inline",
       childTokens: ["questionTokens", "answerTokens"],
-      start(src) {
-        return regexStart(src, /\[\[.*?\|\|.*?\]\]/);
-      },
       tokenizer(src) {
-        const match = /^\[\[(.*?)\|\|(.*?)\]\]/.exec(src);
-        if (!match) return;
+        if (!src.startsWith("[[")) return;
+        const lineEnd = (() => {
+          const newline = src.search(/[\r\n]/);
+          return newline < 0 ? src.length : newline;
+        })();
+        const separator = src.indexOf("||", 2);
+        const end = separator < 0 ? -1 : src.indexOf("]]", separator + 2);
+        if (
+          separator < 0 ||
+          separator >= lineEnd ||
+          end < 0 ||
+          end >= lineEnd
+        ) {
+          let literalEnd = 2;
+          while (src[literalEnd] === "[") literalEnd++;
+          return {
+            type: "reveal",
+            raw: src.slice(0, literalEnd),
+            text: src.slice(0, literalEnd),
+            literal: true
+          };
+        }
         return {
           type: "reveal",
-          raw: match[0],
-          questionTokens: inlineTokens(this.lexer, match[1].trim()),
-          answerTokens: inlineTokens(this.lexer, match[2].trim())
+          raw: src.slice(0, end + 2),
+          questionTokens: inlineTokens(
+            this.lexer,
+            src.slice(2, separator).trim()
+          ),
+          answerTokens: inlineTokens(
+            this.lexer,
+            src.slice(separator + 2, end).trim()
+          )
         };
       },
       renderer(token) {
+        if (token.literal) return escapeHtml(token.text);
         return (
           `<span class="reveal">${this.parser.parseInline(token.questionTokens)}` +
           `<span class="secret">${this.parser.parseInline(token.answerTokens)}</span></span>`
@@ -337,9 +762,6 @@ export function createMarkdownTools(state) {
       name: "superscript",
       level: "inline",
       childTokens: ["tokens"],
-      start(src) {
-        return markerStart(src, "^");
-      },
       tokenizer(src) {
         const match = /^\^([^^\n]+?)\^/.exec(src);
         if (!match || !match[1].trim()) return;
@@ -358,9 +780,6 @@ export function createMarkdownTools(state) {
       name: "subscript",
       level: "inline",
       childTokens: ["tokens"],
-      start(src) {
-        return markerStart(src, "~");
-      },
       tokenizer(src) {
         if (src.startsWith("~~")) return;
         const match = /^~([^~\n]+?)~/.exec(src);
@@ -453,19 +872,80 @@ export function createMarkdownTools(state) {
       }
     };
 
+    const mathSequences = Array.from(
+      new Set(
+        KATEX_DELIMITERS.flatMap((delimiter) => [delimiter.left, delimiter.right])
+      )
+    ).sort((left, right) => right.length - left.length);
+
+    function malformedMathLiteralLength(src, delimiter) {
+      const markdownBoundary = new Set([
+        "`",
+        "*",
+        "_",
+        "~",
+        "^",
+        "=",
+        "[",
+        "<",
+        "!",
+        "&",
+        "|",
+        ";"
+      ]);
+      let index = delimiter.left.length;
+
+      while (index < src.length) {
+        const mathSequence = mathSequences.find((sequence) =>
+          src.startsWith(sequence, index)
+        );
+        // Leave the next delimiter candidate to the extension scheduler. This
+        // both preserves a later valid formula and makes recovery from many
+        // malformed openers a single forward pass over the field.
+        if (mathSequence) break;
+        const character = src[index];
+        if (
+          character === "\\" ||
+          markdownBoundary.has(character) ||
+          (character === "{" && src[index + 1] === "{")
+        ) {
+          break;
+        }
+        index++;
+      }
+      return Math.max(delimiter.left.length, index);
+    }
+
     const mathInline = {
       name: "mathInline",
       level: "inline",
       start(src) {
-        return regexStart(src, /\\\(/);
+        // Scan only until a boundary where Marked will stop by itself. This
+        // keeps mixed Markdown/link-heavy fields linear while still exposing
+        // custom markers that its normal text rule would otherwise consume.
+        return inlineExtensionStart(src);
       },
       tokenizer(src) {
-        const match = /^\\\((.+?)\\\)/.exec(src);
-        if (!match) return;
-        return { type: "mathInline", raw: match[0], text: match[1] };
+        const delimiter = KATEX_DELIMITERS.find((candidate) =>
+          src.startsWith(candidate.left)
+        );
+        if (!delimiter) return;
+
+        const match = matchMathDelimiter(src, KATEX_DELIMITERS);
+        if (!match) {
+          const length = malformedMathLiteralLength(src, delimiter);
+          return {
+            type: "mathInline",
+            raw: src.slice(0, length),
+            text: src.slice(0, length),
+            literal: true
+          };
+        }
+        return { type: "mathInline", ...match };
       },
       renderer(token) {
-        return `\\(${escapeHtml(token.text)}\\)`;
+        if (token.literal) return escapeHtml(token.text);
+        return mathPlaceholder(token, true);
       }
     };
 
@@ -473,15 +953,107 @@ export function createMarkdownTools(state) {
       name: "mathBlock",
       level: "block",
       start(src) {
-        return regexStart(src, /\\\[/);
+        // Marked calls block start hints with src.substring(1), so a hint
+        // cannot safely infer whether a mid-paragraph delimiter was originally
+        // inside a link, code span, or HTML element. Only advertise delimiters
+        // that begin a physical line; inline math owns every other position.
+        return regexStart(src, /^(?: {0,3})(?:\$\$|\\\[)/m);
       },
       tokenizer(src) {
-        const match = /^\\\[([\s\S]+?)\\\]/.exec(src);
+        const opener = /^( {0,3})(?=\$\$|\\\[)/.exec(src);
+        if (!opener) return;
+        const match = matchMathDelimiter(
+          src.slice(opener[1].length),
+          KATEX_BLOCK_DELIMITERS
+        );
         if (!match) return;
-        return { type: "mathBlock", raw: match[0], text: match[1] };
+        return {
+          type: "mathBlock",
+          ...match,
+          raw: src.slice(0, opener[1].length + match.raw.length)
+        };
       },
       renderer(token) {
-        return `\\[${escapeHtml(token.text)}\\]`;
+        return `${mathPlaceholder(token)}\n`;
+      }
+    };
+
+    const rawIgnoredElement = {
+      name: "rawIgnoredElement",
+      level: "inline",
+      tokenizer(src) {
+        const opening = readRawHtmlMarkup(src, 0);
+        if (
+          !opening?.name ||
+          opening.closing ||
+          !ignoredRawMathElements.has(opening.name)
+        ) {
+          return;
+        }
+        if (opening.selfClosing) {
+          return {
+            type: "rawIgnoredElement",
+            raw: src.slice(0, opening.end)
+          };
+        }
+        if (opening.name === "option") {
+          const optionClose = /<\/option\s*>|<option(?=[\s>])|<\/select\s*>/ig;
+          optionClose.lastIndex = opening.end;
+          const boundary = optionClose.exec(src);
+          const end = !boundary
+            ? src.length
+            : /^<\/option/i.test(boundary[0])
+              ? boundary.index + boundary[0].length
+              : boundary.index;
+          return { type: "rawIgnoredElement", raw: src.slice(0, end) };
+        }
+        const closePattern = new RegExp(`</${opening.name}\\s*>`, "ig");
+        closePattern.lastIndex = opening.end;
+        const closing = closePattern.exec(src);
+        const end = closing ? closing.index + closing[0].length : src.length;
+        return { type: "rawIgnoredElement", raw: src.slice(0, end) };
+      },
+      renderer(token) {
+        return token.raw;
+      }
+    };
+
+    const literalImage = {
+      name: "literalImage",
+      level: "inline",
+      tokenizer(src) {
+        if (!src.startsWith("![")) return;
+        const fitbCounter = state.fitbCounter;
+        try {
+          const token = tokenizeBuiltinLink(this, src);
+          if (!token || token.type !== "image") return;
+          token.tokens = [
+            { type: "text", raw: token.text, text: token.text, escaped: false }
+          ];
+          return token;
+        } finally {
+          state.fitbCounter = fitbCounter;
+        }
+      }
+    };
+
+    const safeLink = {
+      name: "safeLink",
+      level: "inline",
+      tokenizer(src) {
+        if (!src.startsWith("[") || src.startsWith("[[")) return;
+        const fitbCounter = state.fitbCounter;
+        try {
+          const token = tokenizeBuiltinLink(this, src);
+          if (!token || token.type !== "link") return;
+          // Keep the built-in label tokenization (including its link context)
+          // so math remains functional, then flatten only controls that would
+          // create invalid interactive descendants inside <a>.
+          token.tokens = literalizeInteractiveLinkTokens(token.tokens);
+          return token;
+        } finally {
+          state.fitbCounter = fitbCounter;
+        }
       }
     };
 
@@ -499,7 +1071,10 @@ export function createMarkdownTools(state) {
       mcq,
       audio,
       mathInline,
-      mathBlock
+      mathBlock,
+      rawIgnoredElement,
+      literalImage,
+      safeLink
     ];
   }
 
@@ -507,6 +1082,7 @@ export function createMarkdownTools(state) {
     canArmReciteTouchScrub,
     canReciteScrub,
     createQuizifyExtensions,
+    createQuizifyRenderer,
     escapeHtml,
     isReciteScrubMove,
     markerStart,

@@ -24,7 +24,9 @@ function tokenize(name, source) {
 }
 
 for (const extension of Object.values(extensions)) {
-  assert.equal(extension.start("plain markdown without quiz syntax"), undefined);
+  if (extension.start) {
+    assert.equal(extension.start("plain markdown without quiz syntax"), undefined);
+  }
 }
 
 assert.equal(tokenize("collapse", ":::\nnot a titled collapse\n:::\n"), undefined);

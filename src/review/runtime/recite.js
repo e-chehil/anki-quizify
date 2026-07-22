@@ -35,6 +35,7 @@ export function initRecite({
     ".reveal",
     ".annotation",
     ".audio-player",
+    ".quizify-math",
     ".katex",
     ".quizify-recite-toolbar"
   ].join(",");

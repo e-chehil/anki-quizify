@@ -13,5 +13,7 @@ test("shared Markdown structure helpers keep parser and diagnostics in sync", ()
   assert.equal(nextFence("content", fence), fence);
   assert.equal(nextFence("````", fence), null);
   assert.equal(fenceMarker("    ```"), null);
+  assert.equal(fenceMarker("```bad`"), null);
+  assert.deepEqual(fenceMarker("~~~bad`"), { char: "~", length: 3 });
   assert.equal(uniqueSortedLetters("cAba!"), "ABC");
 });
