@@ -90,8 +90,8 @@
       "sha256": "bbe184f5de57271d8c0cad5f582680c4a3f7dda93b9479a7b4d75de791d8e796"
     },
     "_quizify.js": {
-      "bytes": 600061,
-      "sha256": "2332103f87ad3d3ec82a2fc8217cef664f79867ab8cbf1720da21f86a6594a15"
+      "bytes": 600060,
+      "sha256": "d9c6dc86f07beb787960c7feb14ca885e175ce8389fa90c2c056254c1cb1996d"
     }
   }
 }

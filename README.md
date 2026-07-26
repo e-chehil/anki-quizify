@@ -6,7 +6,7 @@ Anki Quizify 是一个 Anki 加载项和卡片模板项目。它让你在 Anki �
 
 当前主线实现位于 `quizify_addon/`。仓库根目录的旧模板和资源已经退役：`front.html` / `back.html` 只保留失败关闭的迁移提示，旧 `_myquizify.js` / `_styles.css` 不再提供；实际加载项只使用 `quizify_addon/templates/`、`quizify_addon/_quizify.js` 和 `quizify_addon/_quizify.css`。
 
-当前版本为 **1.0.16**。本版为四种 KaTeX 定界符增加 Markdown 前置保护，避免公式内容被上下标、填空、揭示、链接、表格等扩展提前解析，并补充公式资源上限和宏定义安全限制；1.0.15 的 AnkiDroid 正式 API 与旧 WebView 兼容修复保持不变。
+当前版本为 **1.1.0**。本版新增面向 Typora 等编辑器的 Quizify Card Markdown 批量导入：支持 YAML 文档配置、卡片级 HTML 注释、多文件预览、精确去重、安全媒体复制与一次撤销，并让 Markdown 图片和 Quizify 音频能随 `.apkg` 正确导出；1.0.16 的 KaTeX 公式保护与资源安全限制保持不变。
 
 面向用户的发布说明可见 [`docs/release-description.md`](docs/release-description.md)。
 
@@ -47,6 +47,7 @@ Anki Quizify 是一个 Anki 加载项和卡片模板项目。它让你在 Anki �
 │   ├── notetype.py              # Quizify 笔记类型维护
 │   ├── bridge.py                # 桌面 Reviewer 消息桥
 │   ├── core.py                  # 配置、HTML 规范化和文件比较等纯逻辑
+│   ├── importer/                # Typora/Markdown 卡片集解析、媒体处理和批量导入
 │   ├── _quizify.js              # 复习卡片运行时和 marked 扩展
 │   ├── _quizify.css             # 复习卡片样式
 │   ├── _persistence.js          # anki-persistence，用于正反面状态保存
@@ -73,7 +74,7 @@ Anki Quizify 是一个 Anki 加载项和卡片模板项目。它让你在 Anki �
 1. 打开 Anki 桌面端，进入 `工具` -> `插件`。
 2. 选择“从文件安装”，打开 `quizify_markdown.ankiaddon`（下载链接见结尾处）。
 3. 重启 Anki，并进入需要使用 Quizify 的用户资料（profile）。
-4. 打开 `工具` -> `Quizify Markdown`，执行“校验并重新同步媒体”。
+4. 打开 `工具` -> `Quizify Markdown` -> `设置…`，执行“校验并重新同步媒体”。
 5. 如果使用多个用户资料，请分别打开并完成第 4 步。
 
 开发时也可以把本仓库的 `quizify_addon` 整个目录复制到 Anki 插件目录，目录名可保留为 `quizify_addon` 或改成 `anki_quizify`，随后按上述步骤重启并同步媒体。
@@ -91,6 +92,88 @@ AnkiDroid 和 AnkiMobile 不能直接安装桌面加载项。请先在 Desktop �
 ## 基本用法
 
 创建新笔记时选择 `Quizify Markdown` 笔记类型，然后在 `Front` 或 `Back` 字段中写 Markdown。
+
+### 从 Typora / Markdown 批量导入
+
+加载项支持把一个或多个 `.md` 文件批量导入为 Quizify 笔记。这是一次性导入工具，
+不会给笔记写入同步 ID，也不会在 Markdown 修改后自动更新已有笔记。
+
+最小文件如下。独占一行的 `+++` 开始一张新卡片，`***` 从 `Front` 切换到
+`Back`；文件末尾会结束最后一张卡片。普通的 `---` 始终保留为字段内的 Markdown
+分隔线（只有文档第一行的 `---` 可以开始 YAML front matter）。
+
+```markdown
++++
+# 正面
+
+现在是正面
+
+***
+
+# 背面
+
+现在是背面
+
+---
+
+依然是背面
+
++++
+下一张卡片的正面
+***
+下一张卡片的背面
+```
+
+文件开头可以放可选的 YAML 配置，作用于整个文档。`format` 是语法版本号，
+省略时默认为 `1`；当前只支持版本 1。
+
+```markdown
+---
+quizify:
+  format: 1
+  deck: 学习::网络
+  tags: [网络, 日常笔记]
+  media:
+    local: copy
+    remote: keep
+    roots:
+      - ./assets
+---
+
++++
+<!-- quizify-card
+deck: 学习::网络::TCP
+tags: [TCP, 重点]
+draft: false
+-->
+
+TCP 为什么需要三次握手？
+***
+为了可靠地确认双方的发送与接收能力。
+```
+
+卡片配置注释必须是 `Front` 中第一个非空块，开始标记、配置和 `-->` 各自独占
+一行。卡片的 `deck` 覆盖文档牌组，`tags` 与文档标签合并，`draft: true` 会让该卡
+只出现在预览中而不导入。YAML 只接受简单映射、列表和标量，不执行标签、锚点或
+其他高级语法。
+
+导入规则：
+
+- `+++` 与 `***` 只有在不缩进、独占一行时才是结构标记；允许行尾空格。
+- 代码围栏和 `$$ ... $$` 块中的标记按正文处理。要在普通正文中写出独占一行的
+  标记，可写 `\+++` 或 `\***`，导入后反斜杠会去掉。
+- 本地 Markdown 图片和 `!audio[...]()` 默认复制进 Anki 媒体库，并把路径改写为
+  Anki 实际采用的文件名。路径和 `media.roots` 都必须位于 Markdown 文件所在目录
+  之下，不能用 `..` 或符号链接越界。远程 URL 默认原样保留并给出离线警告。
+- `media.local` 可设为 `copy`、`keep` 或 `error`；`media.remote` 可设为 `keep`
+  或 `error`。`keep` 本地文件不会进入 Anki 媒体库，因此不适合跨设备使用。
+- 默认跳过在 Quizify 笔记类型中 `Front` 与 `Back` 都相同的笔记，也可选择全部创建。
+
+在 Anki 中打开 `工具` → `Quizify Markdown` → `导入 Markdown 卡片集…`，多选文件，
+检查卡片预览、诊断、默认牌组和附加标签后再导入。新增笔记与牌组可通过一次撤销
+操作回退；已复制到媒体库的文件不会随撤销删除，以免误删其他笔记仍在使用的媒体。
+完整且可供实现者引用的 v1 规范见
+[`docs/markdown-import-format.md`](docs/markdown-import-format.md)。
 
 ### 填空
 
