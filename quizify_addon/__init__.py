@@ -200,16 +200,27 @@ def add_menu() -> None:
     menu = getattr(getattr(mw, "form", None), "menuTools", None)
     if not menu:
         return
-    action = QAction(MENU, mw)
-    action.triggered.connect(lambda _=False: show_settings())
-    menu.addAction(action)
-    mw._quizify_md_menu = action
+    submenu = menu.addMenu(MENU)
+    import_action = QAction("导入 Markdown 卡片集…", mw)
+    import_action.triggered.connect(lambda _=False: show_markdown_import())
+    submenu.addAction(import_action)
+    submenu.addSeparator()
+    settings_action = QAction("设置…", mw)
+    settings_action.triggered.connect(lambda _=False: show_settings())
+    submenu.addAction(settings_action)
+    mw._quizify_md_menu = submenu
 
 
 def show_settings() -> None:
     from .settings import show_settings as show
 
     show()
+
+
+def show_markdown_import() -> None:
+    from .importer.dialog import show_import_dialog
+
+    show_import_dialog()
 
 
 def _show_warning(message: str) -> None:
@@ -262,7 +273,7 @@ def on_profile_loaded() -> None:
         _show_warning(
             "Quizify Markdown 部分初始化失败，但其余步骤已继续：\n"
             f"{details}\n\n"
-            "请在「工具 → Quizify Markdown」中重试媒体同步和模板更新；"
+            "请在「工具 → Quizify Markdown → 设置…」中重试媒体同步和模板更新；"
             "若设置入口不可用，请从 Anki 插件管理器打开配置并重启。"
         )
 

@@ -63,6 +63,7 @@ class EntrypointTest(unittest.TestCase):
 
         self.events = []
         self.warnings = []
+        self.menu_actions = []
         hooks = types.SimpleNamespace(
             profile_did_open=[],
             editor_will_munge_html=[],
@@ -85,9 +86,20 @@ class EntrypointTest(unittest.TestCase):
                 self.parent = parent
                 self.triggered = Signal()
 
-        class Menu:
+        menu_actions = self.menu_actions
+
+        class Submenu:
             def addAction(self, action):
+                menu_actions.append(action)
+
+            def addSeparator(self):
+                menu_actions.append(None)
+
+        class Menu:
+            def addMenu(self, label):
                 events.append("menu")
+                self.label = label
+                return Submenu()
 
         class AddonManager:
             def getConfig(self, module_name):
@@ -189,6 +201,15 @@ class EntrypointTest(unittest.TestCase):
         self.assertIn("Web 资源注册", self.warnings[0])
         self.assertIn("配置迁移", self.warnings[0])
         self.assertIn("媒体同步", self.warnings[0])
+
+    def test_tools_menu_groups_import_and_settings_actions(self):
+        self.addon.add_menu()
+
+        actions = [action for action in self.menu_actions if action is not None]
+        self.assertEqual(
+            [action.label for action in actions],
+            ["导入 Markdown 卡片集…", "设置…"],
+        )
 
     def test_card_hook_only_processes_managed_template_source_markers(self):
         unowned = (
