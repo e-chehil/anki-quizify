@@ -77,7 +77,9 @@ async function settle(root) {
 test("release bundles are minified and stay within size budgets", async () => {
   const budgets = {
     "_quizify.js": 700_000,
-    "_quizify.css": 70_000,
+    // Includes the complete Kaiwu and Gezhi skins, including Gezhi's legacy
+    // component details and independent choice-result states.
+    "_quizify.css": 82_000,
     "web/editor.js": 50_000,
     "web/editor-preview.js": 750_000,
     // Includes the shared ownership-aware math scanner used by diagnostics.

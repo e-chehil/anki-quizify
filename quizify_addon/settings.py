@@ -6,6 +6,7 @@ from html import escape
 from aqt import mw
 from aqt.qt import (
     QCheckBox,
+    QComboBox,
     QDialog,
     QFrame,
     QHBoxLayout,
@@ -24,7 +25,11 @@ from . import (
     get_config,
     sync_media,
 )
-from .configuration import apply_config_transaction
+from .configuration import (
+    REVIEW_THEME_OPTIONS,
+    apply_config_transaction,
+    normalize_review_theme,
+)
 from .media import media_status
 
 
@@ -64,6 +69,17 @@ class QuizifySettingsDialog(QDialog):
         options = QFrame()
         options.setProperty("role", "card")
         options_layout = QVBoxLayout(options)
+        theme_row = QHBoxLayout()
+        theme_row.addWidget(QLabel("模板主题"))
+        theme_row.addStretch()
+        self.theme = QComboBox()
+        for identifier, label in REVIEW_THEME_OPTIONS:
+            self.theme.addItem(label, identifier)
+        theme_row.addWidget(self.theme)
+        options_layout.addLayout(theme_row)
+        options_layout.addWidget(
+            self.description("开务：现代清晰；格致：复古书卷。")
+        )
         self.cardless = QCheckBox("使用沉浸式无卡片背景")
         self.floating = QCheckBox("启用悬浮复习控制")
         self.ankidroid = QCheckBox("启用 AnkiDroid 正式 JavaScript API")
@@ -109,12 +125,15 @@ class QuizifySettingsDialog(QDialog):
                 padding: 10px;
             }
             QCheckBox { min-height: 28px; }
+            QComboBox { min-width: 128px; min-height: 30px; padding: 2px 8px; }
             QPushButton { min-height: 30px; padding: 3px 13px; }
             """
         )
 
     def load_config(self) -> None:
         config = get_config()
+        theme_index = self.theme.findData(config["review"]["theme"])
+        self.theme.setCurrentIndex(max(theme_index, 0))
         self.cardless.setChecked(config["review"]["cardless"])
         self.floating.setChecked(config["review"]["floating_control"])
         self.ankidroid.setChecked(config["platform"]["ankidroid_api"])
@@ -145,6 +164,9 @@ class QuizifySettingsDialog(QDialog):
     def save(self) -> None:
         current = get_config()
         proposed = deepcopy(current)
+        proposed["review"]["theme"] = normalize_review_theme(
+            self.theme.currentData()
+        )
         proposed["review"]["cardless"] = self.cardless.isChecked()
         proposed["review"]["floating_control"] = self.floating.isChecked()
         proposed["platform"]["ankidroid_api"] = self.ankidroid.isChecked()

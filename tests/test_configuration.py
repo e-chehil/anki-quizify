@@ -28,7 +28,11 @@ class ConfigurationTest(unittest.TestCase):
         defaults = {
             "schema_version": 1,
             "note_type": "Quizify Markdown",
-            "review": {"cardless": False, "floating_control": True},
+            "review": {
+                "theme": "kaiwu",
+                "cardless": False,
+                "floating_control": True,
+            },
             "platform": {"ankidroid_api": True},
         }
         migrated = configuration.normalize_config(
@@ -45,7 +49,11 @@ class ConfigurationTest(unittest.TestCase):
         self.assertEqual(migrated["note_type"], "My Quizify")
         self.assertEqual(
             migrated["review"],
-            {"cardless": True, "floating_control": False},
+            {
+                "theme": "kaiwu",
+                "cardless": True,
+                "floating_control": False,
+            },
         )
         self.assertEqual(migrated["platform"], {"ankidroid_api": False})
         self.assertNotIn("assets", migrated)
@@ -55,7 +63,11 @@ class ConfigurationTest(unittest.TestCase):
         defaults = {
             "schema_version": 1,
             "note_type": "Quizify Markdown",
-            "review": {"cardless": False, "floating_control": True},
+            "review": {
+                "theme": "kaiwu",
+                "cardless": False,
+                "floating_control": True,
+            },
             "platform": {"ankidroid_api": True},
         }
         value = configuration.normalize_config(
@@ -63,6 +75,33 @@ class ConfigurationTest(unittest.TestCase):
             {"note_type": " ", "review": {"cardless": "yes"}},
         )
         self.assertEqual(value, defaults)
+
+    def test_theme_uses_exact_whitelist_and_migrates_missing_value(self):
+        defaults = {
+            "schema_version": 1,
+            "note_type": "Quizify Markdown",
+            "review": {
+                "theme": "kaiwu",
+                "cardless": False,
+                "floating_control": True,
+            },
+            "platform": {"ankidroid_api": True},
+        }
+
+        for stored_theme in (None, "", "GEZHI", " gezhi ", 1, ["gezhi"]):
+            stored = {"review": {"theme": stored_theme}}
+            with self.subTest(stored_theme=stored_theme):
+                normalized = configuration.normalize_config(defaults, stored)
+                self.assertEqual(normalized["review"]["theme"], "kaiwu")
+
+        normalized = configuration.normalize_config(
+            defaults, {"review": {"theme": "gezhi"}}
+        )
+        self.assertEqual(normalized["review"]["theme"], "gezhi")
+        self.assertEqual(
+            configuration.REVIEW_THEME_OPTIONS,
+            (("kaiwu", "开务"), ("gezhi", "格致")),
+        )
 
     def test_config_transaction_commits_only_after_dependencies_succeed(self):
         current = {"note_type": "Old", "review": {"cardless": False}}

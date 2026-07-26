@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-quizify-theme="kaiwu">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,6 +12,7 @@
 </head>
 <body>
   <div class="preview-tools" aria-label="预览工具">
+    <button type="button" id="visual-theme-toggle">切换格致</button>
     <button type="button" id="theme-toggle">切换深色</button>
   </div>
 
@@ -135,7 +136,7 @@
     </article>
   </div>
 
-  <script type="application/json" id="quizify-config">{"enable_floating_ball":true}</script>
+  <script type="application/json" id="quizify-config">{"review":{"theme":"kaiwu","floating_control":true}}</script>
   <script>window.isBack = false;</script>
   <script src="../quizify_addon/_quizify.js"></script>
   <script>
@@ -156,6 +157,15 @@
     collapsedPreviewItem?.querySelector('[data-action="toggle"]')?.click();
     initAllQuizFeatures();
     document.getElementById('theme-toggle').addEventListener('click', () => document.body.classList.toggle('nightMode'));
+    document.getElementById('visual-theme-toggle').addEventListener('click', (event) => {
+      const root = document.documentElement;
+      const next = root.dataset.quizifyTheme === 'gezhi' ? 'kaiwu' : 'gezhi';
+      root.dataset.quizifyTheme = next;
+      document.querySelectorAll('.container').forEach((container) => {
+        container.dataset.quizifyTheme = next;
+      });
+      event.currentTarget.textContent = next === 'gezhi' ? '切换开务' : '切换格致';
+    });
   </script>
 </body>
 </html>

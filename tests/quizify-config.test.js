@@ -2,6 +2,10 @@ const assert = require("node:assert/strict");
 
 const containers = [
   {
+    attributes: new Map(),
+    setAttribute(name, value) {
+      this.attributes.set(name, value);
+    },
     classList: {
       values: new Set(),
       toggle(name, enabled) {
@@ -34,8 +38,10 @@ assert.equal(config.cardless, true);
 
 quizify._internal.applyConfig(config);
 assert.equal(containers[0].classList.contains("quizify-cardless"), true);
+assert.equal(containers[0].attributes.get("data-quizify-theme"), "kaiwu");
 
-quizify._internal.applyConfig({ cardless: false });
+quizify._internal.applyConfig({ cardless: false, review: { theme: "gezhi" } });
 assert.equal(containers[0].classList.contains("quizify-cardless"), false);
+assert.equal(containers[0].attributes.get("data-quizify-theme"), "gezhi");
 
 console.log("quizify config tests passed");

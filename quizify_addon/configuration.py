@@ -10,6 +10,12 @@ from .core import config_json_for_html
 SCHEMA_VERSION = 1
 DEFAULT_NOTE_TYPE = "Quizify Markdown"
 DEVELOPER_CONTACT = "chehil@163.com"
+DEFAULT_REVIEW_THEME = "kaiwu"
+REVIEW_THEME_OPTIONS = (
+    ("kaiwu", "开务"),
+    ("gezhi", "格致"),
+)
+REVIEW_THEMES = tuple(identifier for identifier, _label in REVIEW_THEME_OPTIONS)
 
 
 def read_json(path: Path) -> dict:
@@ -22,6 +28,15 @@ def default_config(addon_dir: Path) -> dict:
 
 def _bool(value, fallback: bool) -> bool:
     return value if isinstance(value, bool) else fallback
+
+
+def normalize_review_theme(value, fallback=DEFAULT_REVIEW_THEME) -> str:
+    """Return an exact supported theme identifier or a safe default."""
+    if isinstance(value, str) and value in REVIEW_THEMES:
+        return value
+    if isinstance(fallback, str) and fallback in REVIEW_THEMES:
+        return fallback
+    return DEFAULT_REVIEW_THEME
 
 
 def normalize_config(defaults: dict, stored) -> dict:
@@ -41,6 +56,10 @@ def normalize_config(defaults: dict, stored) -> dict:
         "schema_version": SCHEMA_VERSION,
         "note_type": note_type or defaults["note_type"],
         "review": {
+            "theme": normalize_review_theme(
+                review.get("theme"),
+                default_review.get("theme", DEFAULT_REVIEW_THEME),
+            ),
             "cardless": _bool(
                 review.get("cardless", stored.get("cardless")),
                 default_review["cardless"],

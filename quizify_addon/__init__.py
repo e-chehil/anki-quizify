@@ -19,6 +19,7 @@ from .configuration import (
     get_config as load_config,
     migrate_config,
     note_type_name as configured_note_type_name,
+    normalize_review_theme,
 )
 from .core import (
     SOURCE_ERROR_HTML,
@@ -155,7 +156,8 @@ def on_webview_set_content(content: WebContent, context) -> None:
     if not isinstance(context, Editor):
         return
     addon = mw.addonManager.addonFromModule(__name__)
-    notetype = mw.col.models.by_name(note_type_name()) if mw.col else None
+    config = get_config()
+    notetype = mw.col.models.by_name(note_type_name(config)) if mw.col else None
     fields = notetype.get("flds", []) if notetype else []
     plain_indices = ",".join(
         str(index)
@@ -168,6 +170,11 @@ def on_webview_set_content(content: WebContent, context) -> None:
             "quizify": "1",
             "ntid": str(notetype.get("id", "")) if notetype else "",
             "plain": plain_indices,
+            "theme": normalize_review_theme(
+                config.get("review", {}).get("theme")
+                if isinstance(config.get("review"), dict)
+                else None
+            ),
         }
     )
     content.js.extend(
