@@ -49,7 +49,8 @@ $$
             result = rewriter.rewrite(original, source_path=source)
 
             self.assertEqual(result.text, "![示例](<anki-image.png>)")
-            self.assertEqual(added, [image])
+            self.assertEqual(len(added), 1)
+            self.assertTrue(added[0].samefile(image))
             self.assertEqual(result.copied, ("anki-image.png",))
             self.assertFalse(result.has_errors)
 
@@ -184,7 +185,9 @@ $$
                 lambda path: added.append(Path(path)) or "image(1).png"
             ).rewrite(r"![x](image\(1\).png)", source_path=source)
 
-        self.assertEqual(added, [expected])
+            self.assertEqual(len(added), 1)
+            self.assertTrue(added[0].samefile(expected))
+
         self.assertEqual(result.text, "![x](image%281%29.png)")
 
     def test_unclosed_markdown_media_syntax_is_not_imported(self):
