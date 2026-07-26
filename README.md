@@ -334,14 +334,19 @@ Anki 媒体或资料库同步到其他设备。
 
 ## 视觉系统
 
-0.4 版采用统一的 “Knowledge Canvas” 视觉语言：温和纸张背景、深墨正文、青绿色主色和琥珀色辅助色。模板头部明确标识 Question / Answer，浅色与深色主题共享相同的层级与状态语义。
+Quizify 提供两套可选外观，并共用完全相同的模板结构、题型运行时与状态语义：
+
+- **开务**：当前默认的现代主题，以温和纸张背景、深墨正文、青绿色主色和琥珀色辅助色构成清晰的 Knowledge Canvas。
+- **格致**：从 Quizify 早期模板重新设计而来的复古书页主题，使用暖灰纸张、象牙白卡片、蓝灰正文、赭色点缀和中西文衬线字体回退。
+
+两套主题都支持 Anki 的浅色与夜间模式；模板头部会继续明确标识 Question / Answer。
 
 - Markdown 标题、列表、引用、提示框、表格、代码、图片和公式采用统一排版节奏。
 - 折叠、标签页、填空、选择、批注、揭示、音频、背诵和悬浮控制共享圆角、边框、阴影与交互状态。
 - 640px 以下使用紧凑移动布局；长代码在组件内部滚动，不造成页面级横向溢出。
 - 尊重系统的 `prefers-reduced-motion` 设置。
 
-开发时可直接打开 [`docs/visual-preview.html`](docs/visual-preview.html)，集中检查所有组件及深色主题。
+开发时可直接打开 [`docs/visual-preview.html`](docs/visual-preview.html)，集中切换检查「开务 / 格致」、全部组件及深色主题。
 配置面板与编辑工具栏可通过 [`docs/workbench-preview.html`](docs/workbench-preview.html) 集中检查。
 
 ## 编辑器增强
@@ -387,6 +392,7 @@ Markdown 快捷键：
   "schema_version": 1,
   "note_type": "Quizify Markdown",
   "review": {
+    "theme": "kaiwu",
     "cardless": false,
     "floating_control": true
   },
@@ -396,6 +402,7 @@ Markdown 快捷键：
 }
 ```
 
+- `review.theme`: 选择 `kaiwu`（开务，默认现代主题）或 `gezhi`（格致，复古书页主题）。
 - `review.cardless`: 移除复习卡片的背景和阴影。
 - `review.floating_control`: 启用逐项揭示、自动翻面和拖拽评分控制。
 - `platform.ankidroid_api`: 在 AnkiDroid 上启用 0.0.3 正式 JavaScript API 合约；关闭它不会禁用 Android 限定的兼容入口。

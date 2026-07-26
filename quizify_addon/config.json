@@ -2,6 +2,7 @@
   "schema_version": 1,
   "note_type": "Quizify Markdown",
   "review": {
+    "theme": "kaiwu",
     "cardless": false,
     "floating_control": true
   },

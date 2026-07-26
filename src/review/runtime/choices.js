@@ -33,13 +33,15 @@ export function initChoices({
     const name = inputs[0].name;
 
     labels.forEach((label, index) => {
-      if (label.querySelector(".option-seq")) return;
-      const input = label.querySelector("input");
-      const sequence = root.document.createElement("span");
-      sequence.className = "option-seq";
-      sequence.textContent = input?.value || String.fromCharCode(65 + index);
+      let sequence = label.querySelector(".option-seq");
+      if (!sequence) {
+        const input = label.querySelector("input");
+        sequence = root.document.createElement("span");
+        sequence.className = "option-seq";
+        sequence.textContent = input?.value || String.fromCharCode(65 + index);
+        label.insertBefore(sequence, label.firstChild);
+      }
       sequence.style.display = "none";
-      label.insertBefore(sequence, label.firstChild);
     });
 
     function shuffleOptions() {
@@ -77,7 +79,7 @@ export function initChoices({
           input.style.display = "inline-block";
         }
         if (sequence) sequence.style.display = "none";
-        if (checkmark) checkmark.style.display = "inline-block";
+        if (checkmark) checkmark.style.removeProperty("display");
       });
       updateSelectedClasses(inputs, labels);
       userAnswers.mcqs[name] = [];
@@ -98,7 +100,7 @@ export function initChoices({
           input.disabled = true;
           input.style.display = "none";
         }
-        if (sequence) sequence.style.display = "inline-block";
+        if (sequence) sequence.style.removeProperty("display");
         if (checkmark) checkmark.style.display = "none";
       });
 

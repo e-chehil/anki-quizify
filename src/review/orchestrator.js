@@ -146,15 +146,23 @@ import {
     }
   }
 
+  function normalizeReviewTheme(value) {
+    return value === "gezhi" || value === "kaiwu" ? value : "kaiwu";
+  }
+
   function applyConfig(config = readConfig()) {
     if (!root.document) return config;
+
+    const theme = normalizeReviewTheme(config?.review?.theme);
+    root.document.documentElement?.setAttribute("data-quizify-theme", theme);
 
     const containers = root.document.querySelectorAll(".container");
     containers.forEach((container) => {
       container.classList.toggle(
         "quizify-cardless",
-        Boolean(config.review?.cardless ?? config.cardless)
+        Boolean(config?.review?.cardless ?? config?.cardless)
       );
+      container.setAttribute?.("data-quizify-theme", theme);
     });
 
     return config;
@@ -480,6 +488,7 @@ import {
       saveFloatingPosition,
       statusPlacementForCenter,
       readConfig,
+      normalizeReviewTheme,
       resetRenderState,
       runtimeLifecycle
     }

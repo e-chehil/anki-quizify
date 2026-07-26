@@ -24,6 +24,12 @@ function locateEditorBundle() {
 
 export const editorBundleUrl = locateEditorBundle();
 export const quizifyNotetypeId = editorBundleUrl?.searchParams.get("ntid") || "";
+export function normalizeReviewTheme(value) {
+  return value === "gezhi" || value === "kaiwu" ? value : "kaiwu";
+}
+export const quizifyReviewTheme = normalizeReviewTheme(
+  editorBundleUrl?.searchParams.get("theme")
+);
 export const quizifyPlainTextIndices = new Set(
   (editorBundleUrl?.searchParams.get("plain") || "")
     .split(",")

@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 import types
 import unittest
+from urllib.parse import parse_qs, urlsplit
 
 
 ADDON_ROOT = Path(__file__).resolve().parents[1] / "quizify_addon"
@@ -210,6 +211,43 @@ class EntrypointTest(unittest.TestCase):
             [action.label for action in actions],
             ["导入 Markdown 卡片集…", "设置…"],
         )
+
+    def test_editor_preview_query_includes_normalized_review_theme(self):
+        self.mw.addonManager.addonFromModule = lambda _module_name: "quizify"
+        self.mw.col = types.SimpleNamespace(
+            models=types.SimpleNamespace(
+                by_name=lambda _name: {
+                    "id": 42,
+                    "flds": [
+                        {"name": "Front"},
+                        {"name": "Extra"},
+                        {"name": "Back"},
+                    ],
+                }
+            )
+        )
+
+        def editor_query(theme):
+            self.addon.get_config = lambda: {
+                "note_type": "Quizify Markdown",
+                "review": {"theme": theme},
+            }
+            content = types.SimpleNamespace(js=[], css=[])
+            self.addon.on_webview_set_content(content, self.addon.Editor())
+            editor_url = next(url for url in content.js if "/web/editor.js?" in url)
+            return parse_qs(urlsplit(editor_url).query)
+
+        self.assertEqual(
+            editor_query("gezhi"),
+            {
+                "v": [self.addon.ADDON_VERSION],
+                "quizify": ["1"],
+                "ntid": ["42"],
+                "plain": ["0,2"],
+                "theme": ["gezhi"],
+            },
+        )
+        self.assertEqual(editor_query(" GEZHI ")["theme"], ["kaiwu"])
 
     def test_card_hook_only_processes_managed_template_source_markers(self):
         unowned = (

@@ -5,12 +5,14 @@ import { JSDOM } from "jsdom";
 test("heavy editor preview stays unloaded until the render panel requests it", async () => {
   const dom = new JSDOM(`<!doctype html><html><head>
     <script src="https://anki.local/_addons/1172202975/web/editor.js"></script>
-    <script src="https://anki.local/_addons/quizify_markdown/web/editor.js?v=cache-key&quizify=1&ntid=42&plain=0%2C1"></script>
+    <script src="https://anki.local/_addons/quizify_markdown/web/editor.js?v=cache-key&quizify=1&ntid=42&plain=0%2C1&theme=gezhi"></script>
   </head><body></body></html>`, { url: "https://anki.local/" });
   globalThis.document = dom.window.document;
   globalThis.window = dom.window;
 
+  const { quizifyReviewTheme } = await import("../src/editor/runtime-config.js");
   await import(`../src/editor/preview-loader.js?test=${Date.now()}`);
+  assert.equal(quizifyReviewTheme, "gezhi");
   assert.equal(document.querySelector('script[src*="editor-preview.js"]'), null);
 
   const loading = globalThis.quizifyLoadEditorPreview();
@@ -18,7 +20,7 @@ test("heavy editor preview stays unloaded until the render panel requests it", a
   assert(script);
   assert.equal(
     script.src,
-    "https://anki.local/_addons/quizify_markdown/web/editor-preview.js?v=cache-key&quizify=1&ntid=42&plain=0%2C1"
+    "https://anki.local/_addons/quizify_markdown/web/editor-preview.js?v=cache-key&quizify=1&ntid=42&plain=0%2C1&theme=gezhi"
   );
   script.dispatchEvent(new dom.window.Event("load"));
   assert.equal(await loading, true);

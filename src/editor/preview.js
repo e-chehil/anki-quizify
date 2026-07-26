@@ -8,6 +8,7 @@ import {
   disposePreviewInteractions,
   initPreviewInteractions
 } from "./preview-runtime.js";
+import { quizifyReviewTheme } from "./runtime-config.js";
 
 const PREVIEW_DEBOUNCE_MS = 250;
 const BUNDLED_REVIEW_CSS =
@@ -43,10 +44,14 @@ function darkThemeActive() {
   );
 }
 
-function syncPreviewTheme(host) {
+export function syncPreviewTheme(host) {
   const dark = darkThemeActive();
   host?.classList?.toggle("nightMode", dark);
   host?.setAttribute("data-theme", dark ? "dark" : "light");
+  host?.setAttribute("data-quizify-theme", quizifyReviewTheme);
+  host?.shadowRoot
+    ?.querySelector(".quizify-preview-surface")
+    ?.setAttribute("data-quizify-theme", quizifyReviewTheme);
   return dark;
 }
 
@@ -158,7 +163,7 @@ function renderPreview(force = false) {
 
   if (fieldName) fieldName.textContent = current.name || `字段 ${Number(current.index) + 1}`;
   const source = String(current.value ?? "");
-  const renderKey = `${current.index}:${dark ? "dark" : "light"}:${source}`;
+  const renderKey = `${current.index}:${quizifyReviewTheme}:${dark ? "dark" : "light"}:${source}`;
   if (!force && renderKey === lastRenderKey && field === lastRenderTarget) return;
   lastRenderKey = renderKey;
   lastRenderTarget = field;
