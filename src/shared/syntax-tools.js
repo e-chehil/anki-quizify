@@ -6,6 +6,7 @@ import {
   maskMarkdownFencedCode,
   maskMarkdownInlineContexts
 } from "./math.js";
+import { t, tn } from "./i18n.js";
 (function (root, factory) {
   const api = factory();
 
@@ -14,166 +15,166 @@ import {
   }
 })(typeof globalThis !== "undefined" ? globalThis : window, function () {
   const snippets = [
-    ["填空", "{{答案}}"],
-    ["选择", ";;;\nA. 选项 A\nB. 选项 B\nC. 选项 C\n;;;A\n"],
-    ["揭示", "[[题干||答案]]"],
-    ["批注", "[内容]^(批注)^"],
-    ["折叠", "::: 标题\n内容\n:::\n"],
-    ["标签页", "=== 标签一\n内容一\n=== 标签二\n内容二\n===\n"],
-    ["音频", "!audio[标题](文件名.mp3)"],
-    ["背诵", ":::: recite mask=40 mode=mixed\n需要背诵的内容，%%这个短语%%会作为一个整体。\n::::\n"]
+    [t("editor.snippet.fitb"), t("editor.snippet.fitb.template"), t("editor.placeholder.answer")],
+    [t("editor.snippet.choice"), t("editor.snippet.choice.template"), t("editor.placeholder.option_a")],
+    [t("editor.snippet.reveal"), t("editor.snippet.reveal.template"), t("editor.placeholder.question")],
+    [t("editor.snippet.annotation"), t("editor.snippet.annotation.template"), t("editor.placeholder.content")],
+    [t("editor.snippet.collapse"), t("editor.snippet.collapse.template"), t("editor.placeholder.title")],
+    [t("editor.snippet.tabs"), t("editor.snippet.tabs.template"), t("editor.placeholder.tab_one")],
+    [t("editor.snippet.audio"), t("editor.snippet.audio.template"), t("editor.placeholder.audio_title")],
+    [t("editor.snippet.recite"), t("editor.snippet.recite.template"), t("editor.placeholder.recite_text")]
   ];
 
   const markdownActions = [
     {
       id: "bold",
-      label: "加粗",
+      label: t("editor.action.bold"),
       button: "B",
       shortcut: "Ctrl+B",
       key: "b",
       prefix: "**",
       suffix: "**",
-      placeholder: "粗体"
+      placeholder: t("editor.placeholder.bold")
     },
     {
       id: "italic",
-      label: "斜体",
+      label: t("editor.action.italic"),
       button: "I",
       shortcut: "Ctrl+I",
       key: "i",
       prefix: "*",
       suffix: "*",
-      placeholder: "斜体"
+      placeholder: t("editor.placeholder.italic")
     },
     {
       id: "inline-code",
-      label: "行内代码",
+      label: t("editor.action.inline_code"),
       button: "</>",
       shortcut: "Ctrl+`",
       key: "`",
       prefix: "`",
       suffix: "`",
-      placeholder: "代码"
+      placeholder: t("editor.placeholder.code")
     },
     {
       id: "link",
-      label: "链接",
+      label: t("editor.action.link"),
       button: "Link",
       shortcut: "Ctrl+K",
       key: "k",
       prefix: "[",
       suffix: "](url)",
-      placeholder: "链接文字"
+      placeholder: t("editor.placeholder.link_text")
     },
     {
       id: "strikethrough",
-      label: "删除线",
+      label: t("editor.action.strikethrough"),
       button: "S",
       shortcut: "Ctrl+Shift+X",
       key: "x",
       shift: true,
       prefix: "~~",
       suffix: "~~",
-      placeholder: "删除线"
+      placeholder: t("editor.placeholder.strikethrough")
     },
     {
       id: "highlight",
-      label: "高亮",
+      label: t("editor.action.highlight"),
       button: "==",
       shortcut: "Ctrl+Shift+H",
       key: "h",
       shift: true,
       prefix: "==",
       suffix: "==",
-      placeholder: "高亮"
+      placeholder: t("editor.placeholder.highlight")
     },
     {
       id: "superscript",
-      label: "上标",
+      label: t("editor.action.superscript"),
       button: "X²",
       shortcut: "Ctrl+Shift+.",
       code: "Period",
       shift: true,
       prefix: "^",
       suffix: "^",
-      placeholder: "上标"
+      placeholder: t("editor.placeholder.superscript")
     },
     {
       id: "subscript",
-      label: "下标",
+      label: t("editor.action.subscript"),
       button: "X₂",
       shortcut: "Ctrl+Shift+,",
       code: "Comma",
       shift: true,
       prefix: "~",
       suffix: "~",
-      placeholder: "下标"
+      placeholder: t("editor.placeholder.subscript")
     },
     {
       id: "github-alert",
-      label: "警告框",
+      label: t("editor.action.alert"),
       button: "Alert",
       shortcut: "Ctrl+Shift+A",
       key: "a",
       shift: true,
       format: "alert",
-      placeholder: "提示内容"
+      placeholder: t("editor.placeholder.alert")
     },
     {
       id: "heading",
-      label: "标题",
+      label: t("editor.action.heading"),
       button: "H1",
       shortcut: "",
       format: "heading",
-      placeholder: "标题"
+      placeholder: t("editor.placeholder.heading")
     },
     {
       id: "blockquote",
-      label: "引用",
+      label: t("editor.action.blockquote"),
       button: "Quote",
       shortcut: "",
       format: "blockquote",
-      placeholder: "引用内容"
+      placeholder: t("editor.placeholder.quote")
     },
     {
       id: "unordered-list",
-      label: "无序列表",
+      label: t("editor.action.unordered_list"),
       button: "• List",
       shortcut: "",
       format: "unordered-list",
-      placeholder: "列表项"
+      placeholder: t("editor.placeholder.list_item")
     },
     {
       id: "ordered-list",
-      label: "有序列表",
+      label: t("editor.action.ordered_list"),
       button: "1. List",
       shortcut: "",
       format: "ordered-list",
-      placeholder: "列表项"
+      placeholder: t("editor.placeholder.list_item")
     },
     {
       id: "code-block",
-      label: "代码块",
+      label: t("editor.action.code_block"),
       button: "```",
       shortcut: "",
       format: "code-block",
-      placeholder: "代码"
+      placeholder: t("editor.placeholder.code")
     },
     {
       id: "image",
-      label: "图片",
+      label: t("editor.action.image"),
       button: "Image",
       shortcut: "",
       format: "image",
-      placeholder: "图片说明"
+      placeholder: t("editor.placeholder.image_alt")
     },
     {
       id: "table",
-      label: "表格",
+      label: t("editor.action.table"),
       button: "Table",
       shortcut: "",
       format: "table",
-      placeholder: "内容"
+      placeholder: t("editor.placeholder.content")
     }
   ];
 
@@ -227,7 +228,7 @@ import {
       return image ? image[1] : `![${content}](url)`;
     }
     if (action?.format === "table") {
-      return `| 列 1 | 列 2 |\n| --- | --- |\n| ${content} | 内容 |\n`;
+      return t("editor.table.template", { content });
     }
     if (
       selected &&
@@ -395,7 +396,7 @@ import {
     for (const match of source.matchAll(/\{\{(.*?)\}\}/gs)) {
       if (match[1].trim()) continue;
       const pos = locate(match.index);
-      diagnostics.push(diagnostic("warning", "填空题答案为空。", pos.line, pos.column));
+      diagnostics.push(diagnostic("warning", t("syntax.empty_fitb"), pos.line, pos.column));
     }
   }
 
@@ -405,16 +406,16 @@ import {
       const pos = locate(match.index);
 
       if (!body.includes("||")) {
-        diagnostics.push(diagnostic("error", "揭示语法缺少 || 分隔符。", pos.line, pos.column));
+        diagnostics.push(diagnostic("error", t("syntax.reveal_missing_separator"), pos.line, pos.column));
         continue;
       }
 
       const [question, answer] = body.split("||");
       if (!question.trim()) {
-        diagnostics.push(diagnostic("warning", "揭示题干为空。", pos.line, pos.column));
+        diagnostics.push(diagnostic("warning", t("syntax.empty_reveal_question"), pos.line, pos.column));
       }
       if (!answer.trim()) {
-        diagnostics.push(diagnostic("warning", "揭示答案为空。", pos.line, pos.column));
+        diagnostics.push(diagnostic("warning", t("syntax.empty_reveal_answer"), pos.line, pos.column));
       }
     }
   }
@@ -423,10 +424,10 @@ import {
     for (const match of source.matchAll(/\[(.*?)\]\^\((.*?)\)\^/gs)) {
       const pos = locate(match.index);
       if (!match[1].trim()) {
-        diagnostics.push(diagnostic("warning", "批注正文为空。", pos.line, pos.column));
+        diagnostics.push(diagnostic("warning", t("syntax.empty_annotation_text"), pos.line, pos.column));
       }
       if (!match[2].trim()) {
-        diagnostics.push(diagnostic("warning", "批注内容为空。", pos.line, pos.column));
+        diagnostics.push(diagnostic("warning", t("syntax.empty_annotation_note"), pos.line, pos.column));
       }
     }
   }
@@ -435,10 +436,10 @@ import {
     for (const match of source.matchAll(/!audio\[(.*?)\]\((.*?)\)/g)) {
       const pos = locate(match.index);
       if (!match[1].trim()) {
-        diagnostics.push(diagnostic("warning", "音频标题为空。", pos.line, pos.column));
+        diagnostics.push(diagnostic("warning", t("syntax.empty_audio_title"), pos.line, pos.column));
       }
       if (!match[2].trim()) {
-        diagnostics.push(diagnostic("error", "音频文件地址为空。", pos.line, pos.column));
+        diagnostics.push(diagnostic("error", t("syntax.empty_audio_url"), pos.line, pos.column));
       }
     }
   }
@@ -465,7 +466,7 @@ import {
       }
 
       if (index >= lines.length) {
-        diagnostics.push(diagnostic("error", "选择题缺少结尾答案行，例如 ;;;A。", startLine));
+        diagnostics.push(diagnostic("error", t("syntax.choice_missing_answer_line"), startLine));
         return;
       }
 
@@ -476,27 +477,27 @@ import {
       const seen = new Set(options.map((option) => option.letter));
 
       if (options.length < 2) {
-        diagnostics.push(diagnostic("error", "选择题至少需要两个选项。", startLine));
+        diagnostics.push(diagnostic("error", t("syntax.choice_too_few_options"), startLine));
       }
       if (!answers.length) {
-        diagnostics.push(diagnostic("error", "选择题答案为空。", index + 1));
+        diagnostics.push(diagnostic("error", t("syntax.choice_empty_answer"), index + 1));
       }
       if (rawAnswers && rawAnswers.length !== uniqueSortedLetters(rawAnswers).length) {
-        diagnostics.push(diagnostic("warning", "选择题答案包含重复字母，复习时会按唯一答案处理。", index + 1));
+        diagnostics.push(diagnostic("warning", t("syntax.choice_duplicate_answers"), index + 1));
       }
 
       for (const answer of answers) {
         if (!seen.has(answer)) {
-          diagnostics.push(diagnostic("error", `选择题答案 ${answer} 没有对应选项。`, index + 1));
+          diagnostics.push(diagnostic("error", t("syntax.choice_missing_option", { answer }), index + 1));
         }
       }
 
       for (const option of options) {
         if (option.duplicate) {
-          diagnostics.push(diagnostic("error", `选择题选项 ${option.letter} 重复。`, option.line));
+          diagnostics.push(diagnostic("error", t("syntax.choice_duplicate_option", { option: option.letter }), option.line));
         }
         if (!option.text.trim()) {
-          diagnostics.push(diagnostic("warning", `选项 ${option.letter} 内容为空。`, option.line));
+          diagnostics.push(diagnostic("warning", t("syntax.choice_empty_option", { option: option.letter }), option.line));
         }
       }
 
@@ -517,7 +518,7 @@ import {
         collapseStack.push(lineNo);
       } else if (/^:::\s*$/.test(trimmed)) {
         if (!collapseStack.length) {
-          diagnostics.push(diagnostic("error", "折叠块出现了多余的结束标记 :::。", lineNo));
+          diagnostics.push(diagnostic("error", t("syntax.collapse_extra_close"), lineNo));
         } else {
           collapseStack.pop();
         }
@@ -528,9 +529,9 @@ import {
         tabCount++;
       } else if (/^===\s*$/.test(trimmed)) {
         if (tabStart === null) {
-          diagnostics.push(diagnostic("error", "标签页出现了多余的结束标记 ===。", lineNo));
+          diagnostics.push(diagnostic("error", t("syntax.tabs_extra_close"), lineNo));
         } else if (tabCount < 2) {
-          diagnostics.push(diagnostic("warning", "标签页通常至少需要两个标签。", tabStart));
+          diagnostics.push(diagnostic("warning", t("syntax.tabs_too_few"), tabStart));
           tabStart = null;
           tabCount = 0;
         } else {
@@ -541,11 +542,11 @@ import {
     });
 
     for (const lineNo of collapseStack) {
-      diagnostics.push(diagnostic("error", "折叠块缺少结束标记 :::。", lineNo));
+      diagnostics.push(diagnostic("error", t("syntax.collapse_missing_close"), lineNo));
     }
 
     if (tabStart !== null) {
-      diagnostics.push(diagnostic("error", "标签页缺少结束标记 ===。", tabStart));
+      diagnostics.push(diagnostic("error", t("syntax.tabs_missing_close"), tabStart));
     }
   }
 
@@ -562,21 +563,21 @@ import {
         String(opener[1] || "").split(/\s+/).filter(Boolean).forEach((part) => {
           const option = /^([A-Za-z][\w-]*)=(\S+)$/.exec(part);
           if (!option) {
-            diagnostics.push(diagnostic("warning", `背诵参数格式无效：${part}。`, lineNo));
+            diagnostics.push(diagnostic("warning", t("syntax.recite_invalid_option", { option: part }), lineNo));
             return;
           }
           const key = option[1].toLowerCase();
           const value = option[2].toLowerCase();
           if (seen.has(key)) {
-            diagnostics.push(diagnostic("warning", `背诵参数 ${key} 重复。`, lineNo));
+            diagnostics.push(diagnostic("warning", t("syntax.recite_duplicate_option", { option: key }), lineNo));
           }
           seen.add(key);
           if (key === "mask" && (!/^\d{1,3}$/.test(value) || Number(value) > 100)) {
-            diagnostics.push(diagnostic("error", "背诵遮挡比例 mask 必须是 0 到 100。", lineNo));
+            diagnostics.push(diagnostic("error", t("syntax.recite_invalid_mask"), lineNo));
           } else if (key === "mode" && !["auto", "manual", "mixed"].includes(value)) {
-            diagnostics.push(diagnostic("error", "背诵 mode 只能是 auto、manual 或 mixed。", lineNo));
+            diagnostics.push(diagnostic("error", t("syntax.recite_invalid_mode"), lineNo));
           } else if (!["mask", "mode"].includes(key)) {
-            diagnostics.push(diagnostic("warning", `未知背诵参数：${key}。`, lineNo));
+            diagnostics.push(diagnostic("warning", t("syntax.recite_unknown_option", { option: key }), lineNo));
           }
         });
         stack.push(entry);
@@ -585,12 +586,12 @@ import {
 
       if (/^::::\s*$/.test(trimmed)) {
         if (!stack.length) {
-          diagnostics.push(diagnostic("error", "背诵块出现了多余的结束标记 ::::。", lineNo));
+          diagnostics.push(diagnostic("error", t("syntax.recite_extra_close"), lineNo));
           return;
         }
         const entry = stack.pop();
         if (entry.markers % 2 !== 0) {
-          diagnostics.push(diagnostic("error", "背诵分组缺少配对的 %% 标记。", entry.line));
+          diagnostics.push(diagnostic("error", t("syntax.recite_unpaired_group"), entry.line));
         }
         return;
       }
@@ -602,7 +603,7 @@ import {
     });
 
     stack.forEach((entry) => {
-      diagnostics.push(diagnostic("error", "背诵块缺少结束标记 ::::。", entry.line));
+      diagnostics.push(diagnostic("error", t("syntax.recite_missing_close"), entry.line));
     });
   }
 
@@ -639,32 +640,32 @@ import {
 
     for (const match of text.matchAll(/\{\{(.*?)\}\}/gs)) {
       const pos = locate(match.index);
-      const answer = trimPreview(match[1] || "空答案");
-      items.push(previewItem("fitb", "填空", pos.line, { answer }, pos.column));
+      const answer = trimPreview(match[1] || t("syntax.preview.empty_answer"));
+      items.push(previewItem("fitb", t("editor.snippet.fitb"), pos.line, { answer }, pos.column));
     }
 
     for (const match of text.matchAll(/\[\[([\s\S]*?)\]\]/g)) {
       const pos = locate(match.index);
       const [question = "", answer = ""] = match[1].split("||");
-      items.push(previewItem("reveal", "揭示", pos.line, {
-        question: trimPreview(question || "空题干"),
-        answer: trimPreview(answer || "空答案")
+      items.push(previewItem("reveal", t("editor.snippet.reveal"), pos.line, {
+        question: trimPreview(question || t("syntax.preview.empty_question")),
+        answer: trimPreview(answer || t("syntax.preview.empty_answer"))
       }, pos.column));
     }
 
     for (const match of text.matchAll(/\[(.*?)\]\^\((.*?)\)\^/gs)) {
       const pos = locate(match.index);
-      items.push(previewItem("annotation", "批注", pos.line, {
-        text: trimPreview(match[1] || "空正文"),
-        note: trimPreview(match[2] || "空批注")
+      items.push(previewItem("annotation", t("editor.snippet.annotation"), pos.line, {
+        text: trimPreview(match[1] || t("syntax.preview.empty_text")),
+        note: trimPreview(match[2] || t("syntax.preview.empty_note"))
       }, pos.column));
     }
 
     for (const match of text.matchAll(/!audio\[(.*?)\]\((.*?)\)/g)) {
       const pos = locate(match.index);
-      items.push(previewItem("audio", "音频", pos.line, {
-        title: trimPreview(match[1] || "无标题"),
-        url: trimPreview(match[2] || "无文件")
+      items.push(previewItem("audio", t("editor.snippet.audio"), pos.line, {
+        title: trimPreview(match[1] || t("syntax.preview.untitled")),
+        url: trimPreview(match[2] || t("syntax.preview.no_file"))
       }, pos.column));
     }
   }
@@ -694,9 +695,9 @@ import {
       const options = choiceOptionsFromLines(optionLines).map((option) => option.letter);
       const answers = close ? uniqueSortedLetters(close[1]) : "";
 
-      items.push(previewItem(answers.length === 1 ? "single" : "multiple", answers.length === 1 ? "单选" : "多选", startLine, {
-        options: options.join("") || "无选项",
-        answers: answers || "无答案"
+      items.push(previewItem(answers.length === 1 ? "single" : "multiple", t(answers.length === 1 ? "syntax.preview.single" : "syntax.preview.multiple"), startLine, {
+        options: options.join("") || t("syntax.preview.no_options"),
+        answers: answers || t("syntax.preview.no_answer")
       }));
 
       index++;
@@ -708,7 +709,7 @@ import {
       const lineNo = idx + 1;
       const collapse = /^:::\s+(.+?)\s*$/.exec(line.trim());
       if (collapse) {
-        items.push(previewItem("collapse", "折叠", lineNo, {
+        items.push(previewItem("collapse", t("editor.snippet.collapse"), lineNo, {
           title: trimPreview(collapse[1])
         }));
       }
@@ -721,7 +722,7 @@ import {
             .map((part) => part.split("=", 2))
             .filter((pair) => pair.length === 2)
         );
-        items.push(previewItem("recite", "背诵", lineNo, {
+        items.push(previewItem("recite", t("editor.snippet.recite"), lineNo, {
           mask: options.mask || "40",
           mode: options.mode || "mixed"
         }));
@@ -729,7 +730,7 @@ import {
 
       const tab = /^===\s+(.+?)\s*$/.exec(line.trim());
       if (tab) {
-        items.push(previewItem("tab", "标签页", lineNo, {
+        items.push(previewItem("tab", t("editor.snippet.tabs"), lineNo, {
           title: trimPreview(tab[1])
         }));
       }
@@ -755,10 +756,16 @@ import {
     const errors = diagnostics.filter((item) => item.severity === "error").length;
     const warnings = diagnostics.filter((item) => item.severity === "warning").length;
 
-    if (!errors && !warnings) return "语法通过";
-    if (errors && warnings) return `${errors} 个错误，${warnings} 个警告`;
-    if (errors) return `${errors} 个错误`;
-    return `${warnings} 个警告`;
+    if (!errors && !warnings) return t("syntax.summary.valid");
+    const errorSummary = tn("syntax.summary.errors", errors);
+    const warningSummary = tn("syntax.summary.warnings", warnings);
+    if (errors && warnings) {
+      return t("syntax.summary.combined", {
+        errors: errorSummary,
+        warnings: warningSummary
+      });
+    }
+    return errors ? errorSummary : warningSummary;
   }
 
   return {

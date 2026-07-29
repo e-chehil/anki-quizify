@@ -5,6 +5,10 @@
       "bytes": 1676,
       "sha256": "f3b6dfb2c47ca03ca752a557dc67e960b7f0e9d6a6add4fab1505e588cde09c2"
     },
+    "_quizify-i18n.js": {
+      "bytes": 144049,
+      "sha256": "e0e840a0bc31409d8f3ec6652152b0d2b512232bfd56df29a5cfa54f8738e3b0"
+    },
     "_quizify-katex-KaTeX_AMS-Regular-U6PRYMIZ.woff2": {
       "bytes": 28076,
       "sha256": "0cdd387c9590a1a9f9794560022dbb59654a7d86f187aa0c81495ad42d3a7308"
@@ -86,12 +90,12 @@
       "sha256": "71d517d67827787cfabdf186914cc3358eda539e37931941f2b2fd4a21f68c0b"
     },
     "_quizify.css": {
-      "bytes": 80908,
-      "sha256": "2671b148ca79f240431d919c45426a6f4517f37731b7e7f4253e2650443c961f"
+      "bytes": 85587,
+      "sha256": "502314cbd46dae096de36e3aa115f89b6b1f904ceb57324a0ca84dfc25897574"
     },
     "_quizify.js": {
-      "bytes": 600400,
-      "sha256": "e413e88ce56e580c17f14b2207cb00b043908dfb17ddbfef3c7ed8891bd32d6f"
+      "bytes": 621313,
+      "sha256": "ac6fd64c0fc77ad4a5d499e9320206d7f68037be20064e7234c9ea1ed395343c"
     }
   }
 }

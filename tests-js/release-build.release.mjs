@@ -5,6 +5,7 @@ import { JSDOM, VirtualConsole } from "jsdom";
 
 const addon = new URL("../quizify_addon/", import.meta.url);
 const reviewBundle = await readFile(new URL("_quizify.js", addon), "utf8");
+const catalogBundle = await readFile(new URL("_quizify-i18n.js", addon), "utf8");
 
 function appendClassicScript(root, source) {
   const script = root.document.createElement("script");
@@ -48,6 +49,7 @@ function reviewRuntime({ side = "front", apiSource }) {
     value: undefined
   });
   appendClassicScript(dom.window, apiSource);
+  appendClassicScript(dom.window, catalogBundle);
   appendClassicScript(dom.window, reviewBundle);
   dom.window.Quizify.boot({ side });
   return dom;
@@ -76,10 +78,12 @@ async function settle(root) {
 
 test("release bundles are minified and stay within size budgets", async () => {
   const budgets = {
+    // Complete Chinese, English and Russian catalogs shared by every runtime.
+    "_quizify-i18n.js": 150_000,
     "_quizify.js": 700_000,
-    // Includes the complete Kaiwu and Gezhi skins, including Gezhi's legacy
-    // component details and independent choice-result states.
-    "_quizify.css": 82_000,
+    // Includes both skins, bidirectional layout, embedded vector decorations,
+    // and scoped resets that isolate owned controls from Anki WebView styles.
+    "_quizify.css": 86_000,
     "web/editor.js": 50_000,
     "web/editor-preview.js": 750_000,
     // Includes the shared ownership-aware math scanner used by diagnostics.

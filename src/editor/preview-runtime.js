@@ -27,17 +27,63 @@ function scopedDocument(scope) {
 
 function previewRoot(scope, isBack) {
   const ownerWindow = scope.ownerDocument?.defaultView || globalThis;
-  return {
+  const viewportTarget = scope.getRootNode?.()?.host || scope;
+  const root = {
     addEventListener: ownerWindow.addEventListener?.bind(ownerWindow),
+    cancelAnimationFrame: ownerWindow.cancelAnimationFrame?.bind(ownerWindow),
     clearTimeout: ownerWindow.clearTimeout?.bind(ownerWindow),
     document: scopedDocument(scope),
     getComputedStyle: ownerWindow.getComputedStyle?.bind(ownerWindow),
-    innerWidth: Math.max(scope.clientWidth || 0, ownerWindow.innerWidth || 0),
+    getQuizifyViewportRect() {
+      const visualViewport = ownerWindow.visualViewport;
+      const viewportLeft = Number(visualViewport?.offsetLeft) || 0;
+      const viewportTop = Number(visualViewport?.offsetTop) || 0;
+      const viewportWidth =
+        Number(visualViewport?.width) || Number(ownerWindow.innerWidth) || 0;
+      const viewportHeight =
+        Number(visualViewport?.height) || Number(ownerWindow.innerHeight) || 0;
+      const viewportRight = viewportLeft + viewportWidth;
+      const viewportBottom = viewportTop + viewportHeight;
+      const targetRect = viewportTarget.getBoundingClientRect?.();
+      if (!targetRect?.width || !targetRect?.height) {
+        return {
+          left: viewportLeft,
+          top: viewportTop,
+          right: viewportRight,
+          bottom: viewportBottom,
+          width: viewportWidth,
+          height: viewportHeight
+        };
+      }
+
+      const left = Math.max(viewportLeft, targetRect.left);
+      const top = Math.max(viewportTop, targetRect.top);
+      const right = Math.max(left, Math.min(viewportRight, targetRect.right));
+      const bottom = Math.max(top, Math.min(viewportBottom, targetRect.bottom));
+      return { left, top, right, bottom, width: right - left, height: bottom - top };
+    },
     isBack,
     navigator: ownerWindow.navigator,
+    quizifyViewportTarget: viewportTarget,
     removeEventListener: ownerWindow.removeEventListener?.bind(ownerWindow),
+    requestAnimationFrame: ownerWindow.requestAnimationFrame?.bind(ownerWindow),
     setTimeout: ownerWindow.setTimeout?.bind(ownerWindow)
   };
+  Object.defineProperties(root, {
+    innerHeight: {
+      enumerable: true,
+      get: () => Number(ownerWindow.innerHeight) || 0
+    },
+    innerWidth: {
+      enumerable: true,
+      get: () => Number(ownerWindow.innerWidth) || 0
+    },
+    visualViewport: {
+      enumerable: true,
+      get: () => ownerWindow.visualViewport
+    }
+  });
+  return root;
 }
 
 function parserTools() {

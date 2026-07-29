@@ -5,6 +5,8 @@ import json
 import re
 from typing import Callable
 
+from ..i18n import tr
+
 
 SUPPORTED_FORMAT = 1
 ERROR = "error"
@@ -202,15 +204,30 @@ def _parse_yaml_scalar(
         try:
             parsed = json.loads(value)
         except (json.JSONDecodeError, TypeError):
-            report(ERROR, "invalid_yaml_string", "YAML 双引号字符串无效。", line)
+            report(
+                ERROR,
+                "invalid_yaml_string",
+                tr("import.parser.invalid_yaml_double_quoted"),
+                line,
+            )
             return None
         if not isinstance(parsed, str):
-            report(ERROR, "invalid_yaml_string", "此处需要 YAML 字符串。", line)
+            report(
+                ERROR,
+                "invalid_yaml_string",
+                tr("import.parser.expected_yaml_string"),
+                line,
+            )
             return None
         return parsed
     if value.startswith("'"):
         if len(value) < 2 or not value.endswith("'"):
-            report(ERROR, "invalid_yaml_string", "YAML 单引号字符串未闭合。", line)
+            report(
+                ERROR,
+                "invalid_yaml_string",
+                tr("import.parser.unclosed_yaml_single_quoted"),
+                line,
+            )
             return None
         return value[1:-1].replace("''", "'")
     lowered = value.lower()
@@ -230,14 +247,24 @@ def _parse_yaml_scalar(
             pass
     if value.startswith("["):
         if not value.endswith("]"):
-            report(ERROR, "invalid_yaml_list", "YAML 行内列表未闭合。", line)
+            report(
+                ERROR,
+                "invalid_yaml_list",
+                tr("import.parser.unclosed_yaml_inline_list"),
+                line,
+            )
             return None
         inner = value[1:-1].strip()
         if not inner:
             return []
         parts = _split_inline_list(inner)
         if parts is None or any(not part for part in parts):
-            report(ERROR, "invalid_yaml_list", "YAML 行内列表无效。", line)
+            report(
+                ERROR,
+                "invalid_yaml_list",
+                tr("import.parser.invalid_yaml_inline_list"),
+                line,
+            )
             return None
         return [
             _parse_yaml_scalar(part, line=line, report=report) for part in parts
@@ -246,7 +273,7 @@ def _parse_yaml_scalar(
         report(
             ERROR,
             "unsupported_yaml_value",
-            "配置只支持简单标量、映射和列表，不支持此 YAML 高级语法。",
+            tr("import.parser.unsupported_yaml_syntax"),
             line,
         )
         return None
@@ -275,7 +302,7 @@ class _SubsetYamlParser:
                 self._report(
                     ERROR,
                     "yaml_tab_indentation",
-                    "YAML 配置缩进不能使用制表符。",
+                    tr("import.parser.yaml_tab_indentation"),
                     line_number,
                 )
                 continue
@@ -297,7 +324,7 @@ class _SubsetYamlParser:
             self._report(
                 ERROR,
                 "unexpected_yaml_indentation",
-                "YAML 配置缩进层级无效。",
+                tr("import.parser.invalid_yaml_indentation"),
                 item.line,
             )
             position += 1
@@ -325,7 +352,7 @@ class _SubsetYamlParser:
                 self._report(
                     ERROR,
                     "unexpected_yaml_indentation",
-                    "YAML 配置出现了意外缩进。",
+                    tr("import.parser.unexpected_yaml_mapping_indentation"),
                     item.line,
                 )
                 position += 1
@@ -335,7 +362,7 @@ class _SubsetYamlParser:
                 self._report(
                     ERROR,
                     "invalid_yaml_mapping",
-                    "YAML 配置项必须写成 key: value。",
+                    tr("import.parser.invalid_yaml_mapping_entry"),
                     item.line,
                 )
                 position += 1
@@ -347,7 +374,7 @@ class _SubsetYamlParser:
                 self._report(
                     ERROR,
                     "duplicate_yaml_key",
-                    f"YAML 配置项 {key!r} 重复。",
+                    tr("import.parser.duplicate_yaml_key", key=repr(key)),
                     item.line,
                 )
             cleaned = _strip_yaml_comment(raw_value).strip()
@@ -378,7 +405,7 @@ class _SubsetYamlParser:
                 self._report(
                     ERROR,
                     "unexpected_yaml_indentation",
-                    "YAML 列表出现了意外缩进。",
+                    tr("import.parser.unexpected_yaml_list_indentation"),
                     item.line,
                 )
                 position += 1
@@ -407,7 +434,7 @@ class _SubsetYamlParser:
                 self._report(
                     ERROR,
                     "empty_yaml_list_item",
-                    "YAML 列表项不能为空。",
+                    tr("import.parser.empty_yaml_list_item"),
                     item.line,
                 )
                 result.append(None)
@@ -438,7 +465,7 @@ def _validate_string(
         sink.add(
             ERROR,
             "invalid_config_value",
-            f"配置项 {key!r} 必须是非空字符串。",
+            tr("import.parser.config_nonempty_string", key=repr(key)),
             line,
             card_index,
         )
@@ -461,7 +488,7 @@ def _validate_string_list(
         sink.add(
             ERROR,
             "invalid_config_value",
-            f"配置项 {key!r} 必须是字符串列表。",
+            tr("import.parser.config_string_list", key=repr(key)),
             line,
             card_index,
         )
@@ -472,7 +499,10 @@ def _validate_string_list(
             sink.add(
                 ERROR,
                 "invalid_config_value",
-                f"配置项 {key!r} 的每一项都必须是非空字符串。",
+                tr(
+                    "import.parser.config_list_nonempty_strings",
+                    key=repr(key),
+                ),
                 line,
                 card_index,
             )
@@ -481,7 +511,11 @@ def _validate_string_list(
             sink.add(
                 ERROR,
                 "invalid_tag",
-                f"配置项 {key!r} 的标签不能包含空白字符：{item!r}。",
+                tr(
+                    "import.parser.config_tag_whitespace",
+                    key=repr(key),
+                    item=repr(item),
+                ),
                 line,
                 card_index,
             )
@@ -505,7 +539,7 @@ def _warn_unknown_keys(
             sink.add(
                 WARNING,
                 "unknown_config_key",
-                f"未知配置项 {key!r} 已被忽略。",
+                tr("import.parser.unknown_config_key", key=repr(key)),
                 locations.get(path + (key,), fallback_line),
                 card_index,
             )
@@ -522,7 +556,7 @@ def _document_config_from_mapping(
         sink.add(
             ERROR,
             "invalid_quizify_config",
-            "quizify 配置必须是 YAML 映射。",
+            tr("import.parser.quizify_config_mapping"),
             line,
         )
         return DocumentConfig()
@@ -539,7 +573,7 @@ def _document_config_from_mapping(
         sink.add(
             ERROR,
             "invalid_format",
-            "quizify.format 必须是整数 1。",
+            tr("import.parser.format_integer"),
             format_line,
         )
         format_version = SUPPORTED_FORMAT
@@ -549,7 +583,10 @@ def _document_config_from_mapping(
             sink.add(
                 ERROR,
                 "unsupported_format",
-                f"不支持 Quizify Card Markdown 格式版本 {format_version}。",
+                tr(
+                    "import.parser.unsupported_format",
+                    version=format_version,
+                ),
                 format_line,
             )
     deck = _validate_string(
@@ -587,7 +624,7 @@ def _media_config_from_mapping(
         sink.add(
             ERROR,
             "invalid_media_config",
-            "quizify.media 必须是 YAML 映射。",
+            tr("import.parser.media_config_mapping"),
             media_line,
         )
         return MediaConfig()
@@ -617,7 +654,7 @@ def _media_config_from_mapping(
         sink.add(
             ERROR,
             "invalid_media_mode",
-            "media.local 只能是 copy、keep 或 error。",
+            tr("import.parser.local_media_mode"),
             locations.get(("media", "local"), media_line),
         )
         local = None
@@ -625,7 +662,7 @@ def _media_config_from_mapping(
         sink.add(
             ERROR,
             "invalid_media_mode",
-            "media.remote 只能是 keep 或 error。",
+            tr("import.parser.remote_media_mode"),
             locations.get(("media", "remote"), media_line),
         )
         remote = None
@@ -651,7 +688,7 @@ def _card_config_from_mapping(
         sink.add(
             ERROR,
             "invalid_card_config",
-            "quizify-card 配置必须是 YAML 映射。",
+            tr("import.parser.card_config_mapping"),
             line,
             card_index,
         )
@@ -684,7 +721,7 @@ def _card_config_from_mapping(
         sink.add(
             ERROR,
             "invalid_config_value",
-            "配置项 'draft' 必须是 true 或 false。",
+            tr("import.parser.draft_boolean"),
             locations.get(("draft",), line),
             card_index,
         )
@@ -709,7 +746,7 @@ def _extract_front_matter(
         sink.add(
             ERROR,
             "unclosed_front_matter",
-            "文档开头的 YAML 区域缺少结束分隔线 ---。",
+            tr("import.parser.unclosed_front_matter"),
             1,
         )
         return DocumentConfig(), len(lines)
@@ -729,7 +766,7 @@ def _extract_front_matter(
             sink.add(
                 ERROR,
                 "duplicate_quizify_config",
-                "文档 YAML 中只能有一个 quizify 配置区域。",
+                tr("import.parser.duplicate_quizify_config"),
                 duplicate_line,
             )
     header_line, raw_inline = declarations[0]
@@ -738,7 +775,7 @@ def _extract_front_matter(
         sink.add(
             ERROR,
             "invalid_quizify_config",
-            "quizify: 后应换行书写配置映射。",
+            tr("import.parser.inline_quizify_config"),
             header_line,
         )
         return DocumentConfig(), closing + 1
@@ -783,7 +820,7 @@ def _extract_card_config(
             sink.add(
                 ERROR,
                 "invalid_card_config_comment",
-                "卡片配置注释应以独占一行的 <!-- quizify-card 开始。",
+                tr("import.parser.invalid_card_config_comment"),
                 lines[first][0],
                 card_index,
             )
@@ -800,7 +837,7 @@ def _extract_card_config(
         sink.add(
             ERROR,
             "unclosed_card_config",
-            "quizify-card 配置注释缺少结束标记 -->。",
+            tr("import.parser.unclosed_card_config"),
             lines[first][0],
             card_index,
         )
@@ -925,14 +962,14 @@ def parse_document(text: str, source_name: str = "<memory>") -> ParseResult:
                 sink.add(
                     ERROR,
                     "unexpected_back_separator",
-                    "在第一张卡片开始前发现了 ***。",
+                    tr("import.parser.unexpected_back_separator"),
                     line_number,
                 )
             elif current.separator_line is not None:
                 sink.add(
                     ERROR,
                     "multiple_back_separators",
-                    "一张卡片只能包含一个 Front/Back 分隔符 ***。",
+                    tr("import.parser.multiple_back_separators"),
                     line_number,
                     current.index,
                 )
@@ -947,7 +984,7 @@ def parse_document(text: str, source_name: str = "<memory>") -> ParseResult:
         sink.add(
             WARNING,
             "unclosed_code_fence",
-            "Markdown 代码围栏未闭合，后续分隔符会被视为代码内容。",
+            tr("import.parser.unclosed_code_fence"),
             fence_line or len(lines),
             current.index if current is not None else None,
         )
@@ -955,7 +992,7 @@ def parse_document(text: str, source_name: str = "<memory>") -> ParseResult:
         sink.add(
             WARNING,
             "unclosed_math_block",
-            "块级公式 $$ 未闭合，后续分隔符会被视为公式内容。",
+            tr("import.parser.unclosed_math_block"),
             math_line or len(lines),
             current.index if current is not None else None,
         )
@@ -967,14 +1004,14 @@ def parse_document(text: str, source_name: str = "<memory>") -> ParseResult:
         sink.add(
             ERROR,
             "content_before_first_card",
-            "YAML 区域之后的第一个非空内容必须是 +++。",
+            tr("import.parser.content_before_first_card"),
             first_preamble[0],
         )
     if not builders:
         sink.add(
             ERROR,
             "no_cards",
-            "文档中没有找到以 +++ 开始的卡片。",
+            tr("import.parser.no_cards"),
             min(content_start + 1, len(lines)),
         )
 
@@ -1008,7 +1045,7 @@ def parse_document(text: str, source_name: str = "<memory>") -> ParseResult:
             sink.add(
                 ERROR,
                 "empty_card",
-                "+++ 开始了一张空卡片。",
+                tr("import.parser.empty_card"),
                 builder.start_line,
                 builder.index,
             )
@@ -1017,7 +1054,7 @@ def parse_document(text: str, source_name: str = "<memory>") -> ParseResult:
                 sink.add(
                     ERROR,
                     "empty_front",
-                    "卡片的 Front 字段不能为空。",
+                    tr("import.parser.empty_front"),
                     builder.start_line,
                     builder.index,
                 )
@@ -1025,7 +1062,7 @@ def parse_document(text: str, source_name: str = "<memory>") -> ParseResult:
                 sink.add(
                     ERROR,
                     "missing_back_separator",
-                    "卡片缺少 Front/Back 分隔符 ***。",
+                    tr("import.parser.missing_back_separator"),
                     builder.start_line,
                     builder.index,
                 )
@@ -1033,7 +1070,7 @@ def parse_document(text: str, source_name: str = "<memory>") -> ParseResult:
                 sink.add(
                     WARNING,
                     "empty_back",
-                    "卡片的 Back 字段为空。",
+                    tr("import.parser.empty_back"),
                     builder.separator_line,
                     builder.index,
                 )

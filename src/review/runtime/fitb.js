@@ -1,4 +1,10 @@
 import { resolveRuntimeLifecycle } from "../lifecycle.js";
+import { iconSvg } from "../../shared/icons.js";
+
+function normalizedAnswer(value) {
+  const text = String(value ?? "").trim();
+  return typeof text.normalize === "function" ? text.normalize("NFC") : text;
+}
 
 export function initFitb({
   root,
@@ -33,6 +39,7 @@ export function initFitb({
     fitb.dataset.quizifyInitialized = "true";
 
     const correctAnswer = (input.dataset.answer || "").trim();
+    const normalizedCorrectAnswer = normalizedAnswer(correctAnswer);
     if (userAnswers.fitbs[input.name]) input.value = userAnswers.fitbs[input.name];
 
     function updateInputWidth() {
@@ -46,9 +53,12 @@ export function initFitb({
     function grade() {
       if (!root.isBack) return;
       const userAnswer = input.value.trim();
-      fitb.classList.toggle("correct", userAnswer === correctAnswer);
-      fitb.classList.toggle("error", userAnswer !== correctAnswer);
-      feedbackIcon.textContent = userAnswer === correctAnswer ? "✓" : "✕";
+      const correct = normalizedAnswer(userAnswer) === normalizedCorrectAnswer;
+      fitb.classList.toggle("correct", correct);
+      fitb.classList.toggle("error", !correct);
+      feedbackIcon.innerHTML = iconSvg(correct ? "check" : "x", {
+        className: "fitb-feedback-symbol"
+      });
     }
 
     function revealCorrectAnswer() {
@@ -56,7 +66,9 @@ export function initFitb({
       input.dispatchEvent(new root.Event("input", { bubbles: true }));
       fitb.classList.add("quizify-revealed", "correct");
       fitb.classList.remove("error");
-      feedbackIcon.textContent = "✓";
+      feedbackIcon.innerHTML = iconSvg("check", {
+        className: "fitb-feedback-symbol"
+      });
     }
 
     activeLifecycle.listen(input, "input", () => {
@@ -66,11 +78,6 @@ export function initFitb({
       grade();
     });
     activeLifecycle.listen(feedbackIcon, "click", revealCorrectAnswer);
-    activeLifecycle.listen(feedbackIcon, "keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault();
-      feedbackIcon.click();
-    });
     activeLifecycle.add(() => {
       delete fitb.dataset.quizifyInitialized;
     });
@@ -81,7 +88,8 @@ export function initFitb({
       kind: "fitb",
       element: fitb,
       isRevealed: () =>
-        fitb.classList.contains("quizify-revealed") || input.value.trim() === correctAnswer,
+        fitb.classList.contains("quizify-revealed") ||
+        normalizedAnswer(input.value) === normalizedCorrectAnswer,
       reveal: revealCorrectAnswer
     });
   });

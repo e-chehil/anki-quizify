@@ -22,14 +22,15 @@ from .configuration import (
     normalize_review_theme,
 )
 from .core import (
-    SOURCE_ERROR_HTML,
     html_to_markdown,
     normalize_editor_content,
     protect_quizify_source_regions,
     run_isolated_steps,
+    source_error_html,
 )
 from .media import sync_media as sync_media_files
 from .notetype import MANAGED_TEMPLATE_MARKER, ensure_notetype as ensure_model
+from .i18n import current_locale, tr
 
 
 ADDON_DIR = Path(__file__).parent
@@ -134,8 +135,9 @@ def on_card_will_show(text: str, card, kind: str) -> str:
     """Escape only fields delimited by a Quizify-owned rendered template."""
     if MANAGED_TEMPLATE_MARKER not in text:
         return text
+    error_html = source_error_html()
     if text.count(MANAGED_TEMPLATE_MARKER) != 1:
-        return SOURCE_ERROR_HTML
+        return error_html
     normalized_kind = str(kind or "").lower()
     expected_sides = (
         ("front", "back")
@@ -144,11 +146,19 @@ def on_card_will_show(text: str, card, kind: str) -> str:
         if "question" in normalized_kind
         else None
     )
-    protected = protect_quizify_source_regions(text, expected_sides)
-    if protected == SOURCE_ERROR_HTML:
+    protected = protect_quizify_source_regions(
+        text, expected_sides, error_html=error_html
+    )
+    if protected == error_html:
         return protected
     if "<!-- quizify-source:safe:front -->" not in protected:
-        return SOURCE_ERROR_HTML
+        return error_html
+    locale_script = (
+        '<script id="quizify-runtime-locale">globalThis.quizifyLocale='
+        f"{json.dumps(current_locale())};</script>"
+    )
+    if 'id="quizify-runtime-locale"' not in protected:
+        protected = locale_script + protected
     return protected
 
 
@@ -175,11 +185,13 @@ def on_webview_set_content(content: WebContent, context) -> None:
                 if isinstance(config.get("review"), dict)
                 else None
             ),
+            "lang": current_locale(),
         }
     )
     content.js.extend(
         [
-            f"/_addons/{addon}/web/syntax-tools.js?v={ADDON_VERSION}",
+            f"/_addons/{addon}/_quizify-i18n.js?v={ADDON_VERSION}",
+            f"/_addons/{addon}/web/syntax-tools.js?v={ADDON_VERSION}&lang={current_locale()}",
             f"/_addons/{addon}/web/editor.js?{editor_query}",
         ]
     )
@@ -208,11 +220,11 @@ def add_menu() -> None:
     if not menu:
         return
     submenu = menu.addMenu(MENU)
-    import_action = QAction("导入 Markdown 卡片集…", mw)
+    import_action = QAction(tr("menu.import_markdown"), mw)
     import_action.triggered.connect(lambda _=False: show_markdown_import())
     submenu.addAction(import_action)
     submenu.addSeparator()
-    settings_action = QAction("设置…", mw)
+    settings_action = QAction(tr("menu.settings"), mw)
     settings_action.triggered.connect(lambda _=False: show_settings())
     submenu.addAction(settings_action)
     mw._quizify_md_menu = submenu
@@ -245,8 +257,7 @@ def _warn_if_unsupported() -> None:
 
         if point_version() < 250900:
             _show_warning(
-                "Quizify Markdown 1.0 需要 Anki 25.09 或更高版本。"
-                "当前版本只保证基础加载，请先升级 Anki。"
+                tr("startup.unsupported", version=ADDON_VERSION)
             )
     except Exception:
         pass
@@ -256,33 +267,28 @@ def on_profile_loaded() -> None:
     failures = run_isolated_steps(
         [
             (
-                "Web 资源注册",
+                tr("startup.step.web_exports"),
                 lambda: mw.addonManager.setWebExports(
                     __name__, r"(web/.*|_quizify.*|_persistence\.js)"
                 ),
             ),
             (
-                "设置入口注册",
+                tr("startup.step.settings"),
                 lambda: mw.addonManager.setConfigAction(__name__, show_settings),
             ),
-            ("工具菜单注册", add_menu),
+            (tr("startup.step.menu"), add_menu),
             (
-                "配置迁移",
+                tr("startup.step.config"),
                 lambda: migrate_config(mw, ADDON_DIR, ADDON_MODULE),
             ),
-            ("媒体同步", sync_media),
-            ("模板更新", ensure_notetype),
+            (tr("startup.step.media"), sync_media),
+            (tr("startup.step.template"), ensure_notetype),
         ]
     )
     _warn_if_unsupported()
     if failures:
-        details = "\n".join(f"- {label}：{error}" for label, error in failures)
-        _show_warning(
-            "Quizify Markdown 部分初始化失败，但其余步骤已继续：\n"
-            f"{details}\n\n"
-            "请在「工具 → Quizify Markdown → 设置…」中重试媒体同步和模板更新；"
-            "若设置入口不可用，请从 Anki 插件管理器打开配置并重启。"
-        )
+        details = "\n".join(f"- {label}: {error}" for label, error in failures)
+        _show_warning(tr("startup.partial_failure", details=details))
 
 
 gui_hooks.profile_did_open.append(on_profile_loaded)

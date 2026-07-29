@@ -60,6 +60,20 @@ assert(mixed.some((item) => item.text === "面向连接" && item.hideable && ite
 assert(mixed.some((item) => item.text === "80%" && item.hideable));
 assert(mixed.some((item) => item.text === "的" && !item.hideable));
 
+const international = quizify._internal.tokenizeReciteText(
+  "Протокол использует надёжное соединение и étude café 数据 かな 한국어 العربية।",
+  "auto"
+);
+assert(international.some((item) => item.text === "Протокол" && item.hideable));
+assert(international.some((item) => item.text === "и" && !item.hideable));
+assert(international.some((item) => item.text === "надёжное" && item.hideable));
+assert(international.some((item) => item.text === "étude" && item.hideable));
+assert(international.some((item) => item.text === "café" && item.hideable));
+assert(international.some((item) => item.text === "数" && item.hideable));
+assert(international.some((item) => item.text === "かな" && item.hideable));
+assert(international.some((item) => item.text === "한국어" && item.hideable));
+assert(international.some((item) => item.text === "العربية" && item.hideable));
+
 const manual = quizify._internal.tokenizeReciteText("普通文字 %%整体短语%%", "manual");
 assert.equal(manual.filter((item) => item.hideable).length, 1);
 assert.equal(manual.find((item) => item.hideable).text, "整体短语");

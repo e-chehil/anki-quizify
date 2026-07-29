@@ -7,6 +7,7 @@ import re
 from types import SimpleNamespace
 from typing import Any, Callable, Iterable
 
+from ..i18n import tr
 from .media import MediaRewriter, append_media_manifest
 
 
@@ -59,7 +60,12 @@ class ImportValidationError(ValueError):
         self.diagnostics = tuple(diagnostics)
         super().__init__(
             "\n".join(
-                f"{item.source_path.name}:{item.line}：{item.message}"
+                tr(
+                    "import.service.diagnostic_location",
+                    file=item.source_path.name,
+                    line=item.line,
+                    message=item.message,
+                )
                 for item in self.diagnostics
             )
         )
@@ -154,7 +160,10 @@ def validate_cards(
                     "error",
                     card.source_path,
                     card.source_line,
-                    f"不支持的本地媒体策略：{card.local_media}",
+                    tr(
+                        "import.service.unsupported_local_policy",
+                        policy=card.local_media,
+                    ),
                 )
             )
         if card.remote_media not in {"keep", "error"}:
@@ -163,14 +172,20 @@ def validate_cards(
                     "error",
                     card.source_path,
                     card.source_line,
-                    f"不支持的远程媒体策略：{card.remote_media}",
+                    tr(
+                        "import.service.unsupported_remote_policy",
+                        policy=card.remote_media,
+                    ),
                 )
             )
         deck = (card.deck or fallback_deck).strip()
         if not deck:
             diagnostics.append(
                 ImportDiagnostic(
-                    "error", card.source_path, card.source_line, "没有目标牌组"
+                    "error",
+                    card.source_path,
+                    card.source_line,
+                    tr("import.service.missing_target_deck"),
                 )
             )
         for tag in card.tags:
@@ -180,7 +195,7 @@ def validate_cards(
                         "error",
                         card.source_path,
                         card.source_line,
-                        f"标签不能包含空白：{tag}",
+                        tr("import.service.tag_whitespace", tag=tag),
                     )
                 )
         for field_name, value, line in (
@@ -194,7 +209,10 @@ def validate_cards(
                         "error",
                         card.source_path,
                         line,
-                        f"{field_name} 超过 512 KiB 限制",
+                        tr(
+                            "import.service.field_too_large",
+                            field=field_name,
+                        ),
                     )
                 )
             if SOURCE_MARKER_RE.search(value):
@@ -203,7 +221,10 @@ def validate_cards(
                         "error",
                         card.source_path,
                         line,
-                        f"{field_name} 包含 Quizify 保留的 source 标记",
+                        tr(
+                            "import.service.field_reserved_source",
+                            field=field_name,
+                        ),
                     )
                 )
             if MEDIA_MARKER_RE.search(value):
@@ -212,7 +233,10 @@ def validate_cards(
                         "error",
                         card.source_path,
                         line,
-                        f"{field_name} 包含 Quizify 保留的 media 标记",
+                        tr(
+                            "import.service.field_reserved_media",
+                            field=field_name,
+                        ),
                     )
                 )
             result = validator.rewrite(
@@ -232,7 +256,10 @@ def validate_cards(
                         "error",
                         card.source_path,
                         line,
-                        f"{field_name} 加入媒体引用后超过 512 KiB 限制",
+                        tr(
+                            "import.service.field_too_large_after_media",
+                            field=field_name,
+                        ),
                     )
                 )
             for item in result.diagnostics:
@@ -262,7 +289,7 @@ def _validate_target_decks(col: Any, names: Iterable[str]) -> None:
             existing = by_name(candidate)
             if existing and existing.get("dyn"):
                 raise ValueError(
-                    f"目标牌组不能是筛选牌组，也不能位于其下级：{candidate}"
+                    tr("import.service.filtered_deck", deck=candidate)
                 )
 
 
@@ -281,10 +308,20 @@ def import_cards(
     cards = tuple(cards)
     extra_tags = tuple(extra_tags)
     if duplicate_mode not in {"create", "skip"}:
-        raise ValueError(f"Unsupported duplicate mode: {duplicate_mode}")
+        raise ValueError(
+            tr(
+                "import.service.unsupported_duplicate_mode",
+                mode=duplicate_mode,
+            )
+        )
     invalid_extra_tags = [tag for tag in extra_tags if _tag_has_whitespace(tag)]
     if invalid_extra_tags:
-        raise ValueError(f"附加标签不能包含空白：{invalid_extra_tags[0]}")
+        raise ValueError(
+            tr(
+                "import.service.extra_tag_whitespace",
+                tag=invalid_extra_tags[0],
+            )
+        )
     diagnostics = validate_cards(cards, fallback_deck)
     errors = tuple(item for item in diagnostics if item.severity == "error")
     if errors:
@@ -292,10 +329,12 @@ def import_cards(
 
     notetype = col.models.by_name(notetype_name)
     if not notetype:
-        raise ValueError(f"找不到笔记类型：{notetype_name}")
+        raise ValueError(
+            tr("import.service.notetype_not_found", notetype=notetype_name)
+        )
     field_names = {field.get("name") for field in notetype.get("flds", [])}
     if not {"Front", "Back"}.issubset(field_names):
-        raise ValueError("Quizify 笔记类型缺少 Front 或 Back 字段")
+        raise ValueError(tr("import.service.notetype_missing_fields"))
 
     _validate_target_decks(
         col,
@@ -392,7 +431,10 @@ def import_cards(
                         "error",
                         card.source_path,
                         line,
-                        f"{field_name} 加入媒体引用后超过 512 KiB 限制",
+                        tr(
+                            "import.service.field_too_large_after_media",
+                            field=field_name,
+                        ),
                     )
                 )
         if transformed_errors:
@@ -421,7 +463,7 @@ def import_cards(
             diagnostics=tuple(media_diagnostics),
         )
 
-    target = col.add_custom_undo_entry("导入 Quizify Markdown 卡片集")
+    target = col.add_custom_undo_entry(tr("import.service.undo"))
     try:
         deck_ids: dict[str, int] = {}
         for _, _, _, deck_name, _ in ready:

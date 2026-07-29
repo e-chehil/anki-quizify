@@ -1,4 +1,5 @@
 import { resolveRuntimeLifecycle } from "../lifecycle.js";
+import { t } from "../../shared/i18n.js";
 
 export function activateTabPane(pane) {
   const content = pane?.parentElement;
@@ -141,10 +142,29 @@ export function initReveal({ root, registerRevealController, lifecycle = null })
 
     function setRevealed(show) {
       secret.style.display = show ? "inline" : "none";
+      secret.setAttribute?.("aria-hidden", show ? "false" : "true");
+      element.setAttribute?.("aria-expanded", show ? "true" : "false");
+      const actionLabel = t(show ? "review.reveal.hide" : "review.reveal.show");
+      element.setAttribute?.("aria-label", actionLabel);
+      element.title = actionLabel;
       element.classList.toggle("active", show);
       element.classList.toggle("quizify-revealed", show);
     }
-    activeLifecycle.listen(element, "click", () => {
+    activeLifecycle.listen(element, "click", (event) => {
+      const nestedInteractive = event.target?.closest?.(
+        "a, button, input, select, textarea"
+      );
+      if (nestedInteractive && nestedInteractive !== element) return;
+      setRevealed(secret.style.display !== "inline");
+    });
+    activeLifecycle.listen(element, "keydown", (event) => {
+      if (
+        event.target !== element ||
+        (event.key !== "Enter" && event.key !== " ")
+      ) {
+        return;
+      }
+      event.preventDefault();
       setRevealed(secret.style.display !== "inline");
     });
     activeLifecycle.add(() => {

@@ -253,7 +253,9 @@ const context = {
   console,
   document,
   URL,
+  QuizifyI18nCatalogs: globalThis.QuizifyI18nCatalogs,
   QuizifySyntax: syntax,
+  quizifyLocale: "zh-CN",
   setNotetypeMeta(metadata) {
     context.notetypeMetadata = metadata;
   },

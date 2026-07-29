@@ -1,4 +1,5 @@
 import { resolveRuntimeLifecycle } from "../lifecycle.js";
+import { t } from "../../shared/i18n.js";
 
 export function initAudio({ root, lifecycle = null }) {
   if (!root.document) return;
@@ -20,6 +21,9 @@ export function initAudio({ root, lifecycle = null }) {
     const cancelLoopButton = player.querySelector(".cancelLoop-btn");
     if (!audio || !playButton || !progress || !progressContainer) return;
     player.dataset.quizifyInitialized = "true";
+    if (!player.dataset.kindLabel) {
+      player.dataset.kindLabel = t("review.audio.kind");
+    }
 
     let loopA = null;
     let loopB = null;
@@ -38,7 +42,10 @@ export function initAudio({ root, lifecycle = null }) {
       marker.className = `ab-marker ab-marker-${label.toLowerCase()}`;
       marker.dataset.label = label;
       marker.style.left = `${(time / audio.duration) * 100}%`;
-      marker.title = `Point ${label}: ${formatTime(time)}`;
+      marker.title = t("review.audio.point", {
+        label,
+        time: formatTime(time)
+      });
       progressContainer.appendChild(marker);
       return marker;
     }
@@ -47,7 +54,7 @@ export function initAudio({ root, lifecycle = null }) {
     }
     function setPlayButtonState(isPlaying) {
       playButton.classList.toggle("playing", isPlaying);
-      const label = isPlaying ? "暂停" : "播放";
+      const label = t(isPlaying ? "review.audio.pause" : "review.audio.play");
       playButton.setAttribute("aria-label", label);
       playButton.title = label;
     }

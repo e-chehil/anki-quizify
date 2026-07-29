@@ -264,15 +264,24 @@ test("real DOM toolbar keeps native fields visible and scopes plain text and sho
       "every icon control needs an accessible name"
     );
     assert.match(control.title, /\S/);
+    const icons = control.querySelectorAll(":scope > svg.quizify-command-icon");
+    assert.equal(icons.length, 1, "every editor control must render one direct SVG icon");
+    assert.equal(icons[0].getAttribute("aria-hidden"), "true");
   });
+  assert.equal(toolbar.querySelector(".quizify-markdown-symbol"), null);
+  assert.equal(toolbar.querySelector(".quizify-snippet-symbol"), null);
+  assert.doesNotMatch(
+    visualControls.map((control) => control.textContent).join(""),
+    /⛓|❞|•≡|1≡|▧|▦|◉|↯|※|▾|▤|♪|◐|✓|×/u,
+    "retired font glyphs must not leak back into the icon controls"
+  );
 
   const snippetButtons = [...document.querySelectorAll(".quizify-snippet-button")];
   snippetButtons.forEach((button, index) => {
     const [label] = snippetFixtures[index];
-    const symbol = button.querySelector(".quizify-snippet-symbol");
-    assert(symbol, `${label} should use a compact visible symbol`);
-    assert.equal(symbol.getAttribute("aria-hidden"), "true");
-    assert.match(symbol.textContent.trim(), /^.{1,2}$/u);
+    const icon = button.querySelector(".quizify-snippet-icon");
+    assert.equal(icon?.tagName.toLowerCase(), "svg", `${label} should use a semantic SVG icon`);
+    assert.equal(icon.getAttribute("aria-hidden"), "true");
     assert.match(button.title, new RegExp(`^${label} \\(`));
     assert.match(button.getAttribute("aria-label"), new RegExp(`^${label}`));
     assert.equal(
@@ -377,6 +386,18 @@ test("real DOM toolbar keeps native fields visible and scopes plain text and sho
     "> [!NOTE]\n> 提示内容",
     "editor preview must receive decoded Markdown rather than Anki HTML entities"
   );
+
+  const diagnosticsSummaryBeforeError = document.querySelector(".quizify-diagnostics-status");
+  const okIcon = diagnosticsSummaryBeforeError.querySelector("svg");
+  front.value = "[[missing separator]]";
+  for (const listener of front.listeners.change || []) listener();
+  await new Promise((resolve) => setTimeout(resolve, 140));
+  const diagnosticsSummaryAfterError = document.querySelector(".quizify-diagnostics-status");
+  const errorIcon = diagnosticsSummaryAfterError.querySelector("svg");
+  assert.equal(diagnosticsSummaryAfterError.dataset.state, "error");
+  assert.notEqual(errorIcon, okIcon, "diagnostic state changes must replace the SVG icon");
+  assert.equal(errorIcon.getAttribute("aria-hidden"), "true");
+  assert.match(diagnosticsSummaryAfterError.getAttribute("aria-label"), /\S/);
 
   noteEditor.fields = Promise.resolve([{ name: "Text", plainText: false }]);
   assert.equal(await globalThis.quizifyEditorDeactivate(), true);

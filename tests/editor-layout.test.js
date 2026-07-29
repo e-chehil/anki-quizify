@@ -88,6 +88,8 @@ for (const body of selectorBodies(".quizify-command-bar")) {
 }
 
 assert.match(toolButton, /display:\s*inline-flex;/);
+assert.match(toolButton, /block-size:\s*32px;/, "editor controls need a 32px pointer target");
+assert.match(toolButton, /inline-size:\s*32px;/, "editor controls need a 32px pointer target");
 assert.match(
   toolButton,
   /(?:inline-size|width):\s*(?!auto)[^;]+;/,
@@ -104,6 +106,18 @@ assert.match(
   "the common control class must own one fixed block size"
 );
 assert.match(toolButton, /flex:\s*0\s+0\s+[^;]+;/);
+
+const commandIcon = selectorBody(".quizify-command-icon");
+assert.match(commandIcon, /block-size:\s*17px;/);
+assert.match(commandIcon, /inline-size:\s*17px;/);
+assert.match(commandIcon, /stroke:\s*currentColor;/);
+assert.equal(selectorBodies(".quizify-markdown-symbol").length, 0);
+assert.equal(selectorBodies(".quizify-snippet-symbol").length, 0);
+assert.doesNotMatch(
+  css,
+  /content:\s*["'](?:◉|✓|!|×)["']/u,
+  "editor utility icons must not be synthesized from font glyphs"
+);
 
 for (const selector of [
   ".quizify-markdown-button",

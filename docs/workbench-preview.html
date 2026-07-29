@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quizify Workbench Preview</title>
-  <link rel="stylesheet" href="../src/editor/styles.css?v=1.1.0">
+  <link rel="stylesheet" href="../src/editor/styles.css?v=1.2.0">
   <style>
     :root { --wb-bg:#eef1ec; --wb-panel:#fffefa; --wb-soft:#f5f6f2; --wb-text:#202927; --wb-muted:#68746f; --wb-border:#dfe5df; --wb-primary:#147d72; --wb-primary-soft:#e1f3ef; --wb-shadow:0 24px 64px rgba(32,54,48,.14); }
     * { box-sizing:border-box; }
@@ -14,7 +14,8 @@
     .settings-window { justify-self:center; overflow:hidden; width:min(100%,720px); background:var(--wb-bg); border:1px solid var(--wb-border); border-radius:18px; box-shadow:var(--wb-shadow); }
     .settings-hero { padding:20px 24px 18px; background:var(--wb-panel); border-bottom:1px solid var(--wb-border); }
     .settings-brand { display:flex; align-items:center; gap:12px; }
-    .settings-logo { display:grid; width:38px; height:38px; place-items:center; background:linear-gradient(145deg,var(--wb-primary),#0b625a); border-radius:11px; color:#fff; font-weight:850; }
+    .settings-logo { display:grid; width:38px; height:38px; place-items:center; background:linear-gradient(145deg,var(--wb-primary),#0b625a); border-radius:11px; color:#fff; }
+    .settings-logo svg { width:24px; height:24px; }
     .settings-heading { min-width:0; }
     .settings-heading strong { display:block; font-size:21px; }
     .settings-heading span,.developer { color:var(--wb-muted); font-size:12px; }
@@ -26,7 +27,7 @@
     .settings-card > p { margin:4px 0 10px; color:var(--wb-muted); font-size:12px; line-height:1.5; }
     .setting-option { margin-top:8px; padding:10px 12px; background:var(--wb-soft); border:1px solid var(--wb-border); border-radius:9px; }
     .setting-option strong { display:flex; align-items:center; gap:8px; font-size:13px; }
-    .setting-option strong::before { content:"✓"; display:grid; width:18px; height:18px; place-items:center; background:var(--wb-primary); border-radius:6px; color:#fff; font-size:11px; }
+    .setting-option strong::before { content:""; display:grid; width:18px; height:18px; background:var(--wb-primary); border-radius:6px; -webkit-mask:center/12px 12px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E"); mask:center/12px 12px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E"); }
     .setting-option p { margin:4px 0 0 26px; color:var(--wb-muted); font-size:12px; line-height:1.45; }
     .asset-state { padding:10px 12px; background:var(--wb-soft); border:1px solid var(--wb-border); border-radius:9px; }
     .asset-state strong { color:#287c4b; }
@@ -55,7 +56,7 @@
       <h2 class="preview-title">Configuration panel</h2>
       <div class="settings-window">
         <header class="settings-hero">
-          <div class="settings-brand"><span class="settings-logo">Q</span><div class="settings-heading"><strong>Quizify Markdown</strong><span>Knowledge Canvas · 插件设置</span></div><span class="version">v1.1.0</span></div>
+          <div class="settings-brand"><span class="settings-logo"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"></circle><path d="m16.3 16.3 4.7 4.7"></path><path d="m7.7 11.2 2.2 2.2 4.5-4.7"></path></svg></span><div class="settings-heading"><strong>Quizify Markdown</strong><span>Knowledge Canvas · 插件设置</span></div><span class="version">v1.2.0</span></div>
           <p class="developer">开发者　<b>chehil@163.com</b>　· 2026.07</p>
         </header>
         <main class="settings-content">
@@ -73,32 +74,32 @@
         <div class="native-toolbar"></div>
         <div class="quizify-toolbar quizify-toolbar-docked" role="toolbar" aria-label="Quizify 编辑工具，当前字段：Front 字段">
           <div class="quizify-command-bar" aria-label="Markdown 格式、Quizify 题型、语法检查和预览">
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="加粗" aria-label="Markdown：加粗"><span class="quizify-markdown-symbol">B</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="斜体" aria-label="Markdown：斜体"><span class="quizify-markdown-symbol"><i>I</i></span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="行内代码" aria-label="Markdown：行内代码"><span class="quizify-markdown-symbol">&lt;/&gt;</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="链接" aria-label="Markdown：链接"><span class="quizify-markdown-symbol">⛓</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="删除线" aria-label="Markdown：删除线"><span class="quizify-markdown-symbol">S</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="高亮" aria-label="Markdown：高亮"><span class="quizify-markdown-symbol">==</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="上标" aria-label="Markdown：上标"><span class="quizify-markdown-symbol">X²</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="下标" aria-label="Markdown：下标"><span class="quizify-markdown-symbol">X₂</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="警告框" aria-label="Markdown：警告框"><span class="quizify-markdown-symbol">!</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="标题" aria-label="Markdown：标题"><span class="quizify-markdown-symbol">H1</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="引用" aria-label="Markdown：引用"><span class="quizify-markdown-symbol">❞</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="无序列表" aria-label="Markdown：无序列表"><span class="quizify-markdown-symbol">•≡</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="有序列表" aria-label="Markdown：有序列表"><span class="quizify-markdown-symbol">1≡</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="代码块" aria-label="Markdown：代码块"><span class="quizify-markdown-symbol">{}</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="图片" aria-label="Markdown：图片"><span class="quizify-markdown-symbol">▧</span></button>
-                <button class="quizify-tool-button quizify-markdown-button quizify-format-button" title="表格" aria-label="Markdown：表格"><span class="quizify-markdown-symbol">▦</span></button>
-                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="填空 (Ctrl+Alt+1)" aria-label="Quizify 题型：填空，快捷键 Ctrl+Alt+1"><span class="quizify-snippet-symbol" aria-hidden="true">填</span><kbd class="quizify-shortcut">Ctrl+Alt+1</kbd></button>
-                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="选择 (Ctrl+Alt+2)" aria-label="Quizify 题型：选择，快捷键 Ctrl+Alt+2"><span class="quizify-snippet-symbol" aria-hidden="true">选</span><kbd class="quizify-shortcut">Ctrl+Alt+2</kbd></button>
-                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="揭示 (Ctrl+Alt+3)" aria-label="Quizify 题型：揭示，快捷键 Ctrl+Alt+3"><span class="quizify-snippet-symbol" aria-hidden="true">揭</span><kbd class="quizify-shortcut">Ctrl+Alt+3</kbd></button>
-                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="批注 (Ctrl+Alt+4)" aria-label="Quizify 题型：批注，快捷键 Ctrl+Alt+4"><span class="quizify-snippet-symbol" aria-hidden="true">注</span><kbd class="quizify-shortcut">Ctrl+Alt+4</kbd></button>
-                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="折叠 (Ctrl+Alt+5)" aria-label="Quizify 题型：折叠，快捷键 Ctrl+Alt+5"><span class="quizify-snippet-symbol" aria-hidden="true">折</span><kbd class="quizify-shortcut">Ctrl+Alt+5</kbd></button>
-                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="标签页 (Ctrl+Alt+6)" aria-label="Quizify 题型：标签页，快捷键 Ctrl+Alt+6"><span class="quizify-snippet-symbol" aria-hidden="true">页</span><kbd class="quizify-shortcut">Ctrl+Alt+6</kbd></button>
-                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="音频 (Ctrl+Alt+7)" aria-label="Quizify 题型：音频，快捷键 Ctrl+Alt+7"><span class="quizify-snippet-symbol" aria-hidden="true">音</span><kbd class="quizify-shortcut">Ctrl+Alt+7</kbd></button>
-                <button class="quizify-tool-button quizify-snippet-button quizify-quiz-button" title="背诵 (Ctrl+Alt+8)" aria-label="Quizify 题型：背诵，快捷键 Ctrl+Alt+8"><span class="quizify-snippet-symbol" aria-hidden="true">背</span><kbd class="quizify-shortcut">Ctrl+Alt+8</kbd></button>
-            <details class="quizify-inspector"><summary class="quizify-tool-button quizify-diagnostics-status" data-state="ok" title="语法通过" aria-label="语法检查：通过">语法通过</summary><div class="quizify-inspector-panel"><ul class="quizify-diagnostics-list"></ul><section class="quizify-preview"><div class="quizify-preview-header"><strong>结构预览</strong><span class="quizify-preview-meta"><span class="quizify-preview-field">Front</span><span class="quizify-preview-count">2 个结构</span></span></div><ol class="quizify-preview-list"><li data-kind="fitb"><span class="quizify-preview-kind">填空</span><strong>第 3 行</strong><span class="quizify-preview-detail">答案：面向连接</span></li><li data-kind="recite"><span class="quizify-preview-kind">背诵</span><strong>第 5 行</strong><span class="quizify-preview-detail">遮挡：40%；模式：mixed</span></li></ol></section></div></details>
-            <details class="quizify-command-menu quizify-preview-menu"><summary class="quizify-tool-button quizify-command-summary" title="预览 Front 字段的交互渲染" aria-label="打开 Front 字段的交互渲染预览">渲染</summary><div class="quizify-live-preview-panel"></div></details>
+                <button class="quizify-tool-button quizify-markdown-button" title="加粗" aria-label="Markdown：加粗"><i data-lucide="bold" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="斜体" aria-label="Markdown：斜体"><i data-lucide="italic" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="行内代码" aria-label="Markdown：行内代码"><i data-lucide="code-xml" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="链接" aria-label="Markdown：链接"><i data-lucide="link" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="删除线" aria-label="Markdown：删除线"><i data-lucide="strikethrough" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="高亮" aria-label="Markdown：高亮"><i data-lucide="highlighter" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="上标" aria-label="Markdown：上标"><i data-lucide="superscript" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="下标" aria-label="Markdown：下标"><i data-lucide="subscript" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="警告框" aria-label="Markdown：警告框"><i data-lucide="message-square-warning" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="标题" aria-label="Markdown：标题"><i data-lucide="heading-1" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="引用" aria-label="Markdown：引用"><i data-lucide="quote" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="无序列表" aria-label="Markdown：无序列表"><i data-lucide="list" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="有序列表" aria-label="Markdown：有序列表"><i data-lucide="list-ordered" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="代码块" aria-label="Markdown：代码块"><i data-lucide="square-code" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="图片" aria-label="Markdown：图片"><i data-lucide="image" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-markdown-button" title="表格" aria-label="Markdown：表格"><i data-lucide="table" class="quizify-command-icon"></i></button>
+                <button class="quizify-tool-button quizify-snippet-button" title="填空 (Ctrl+Alt+1)" aria-label="Quizify 题型：填空，快捷键 Ctrl+Alt+1"><i data-lucide="text-cursor-input" class="quizify-command-icon"></i><kbd class="quizify-shortcut">Ctrl+Alt+1</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button" title="选择 (Ctrl+Alt+2)" aria-label="Quizify 题型：选择，快捷键 Ctrl+Alt+2"><i data-lucide="list-checks" class="quizify-command-icon"></i><kbd class="quizify-shortcut">Ctrl+Alt+2</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button" title="揭示 (Ctrl+Alt+3)" aria-label="Quizify 题型：揭示，快捷键 Ctrl+Alt+3"><i data-lucide="eye" class="quizify-command-icon"></i><kbd class="quizify-shortcut">Ctrl+Alt+3</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button" title="批注 (Ctrl+Alt+4)" aria-label="Quizify 题型：批注，快捷键 Ctrl+Alt+4"><i data-lucide="message-square-text" class="quizify-command-icon"></i><kbd class="quizify-shortcut">Ctrl+Alt+4</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button" title="折叠 (Ctrl+Alt+5)" aria-label="Quizify 题型：折叠，快捷键 Ctrl+Alt+5"><i data-lucide="list-collapse" class="quizify-command-icon"></i><kbd class="quizify-shortcut">Ctrl+Alt+5</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button" title="标签页 (Ctrl+Alt+6)" aria-label="Quizify 题型：标签页，快捷键 Ctrl+Alt+6"><i data-lucide="panels-top-left" class="quizify-command-icon"></i><kbd class="quizify-shortcut">Ctrl+Alt+6</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button" title="音频 (Ctrl+Alt+7)" aria-label="Quizify 题型：音频，快捷键 Ctrl+Alt+7"><i data-lucide="audio-lines" class="quizify-command-icon"></i><kbd class="quizify-shortcut">Ctrl+Alt+7</kbd></button>
+                <button class="quizify-tool-button quizify-snippet-button" title="背诵 (Ctrl+Alt+8)" aria-label="Quizify 题型：背诵，快捷键 Ctrl+Alt+8"><i data-lucide="book-open-check" class="quizify-command-icon"></i><kbd class="quizify-shortcut">Ctrl+Alt+8</kbd></button>
+            <details class="quizify-inspector"><summary class="quizify-tool-button quizify-diagnostics-status" data-state="ok" title="语法通过" aria-label="语法检查：通过"><i data-lucide="circle-check" class="quizify-command-icon"></i></summary><div class="quizify-inspector-panel"><ul class="quizify-diagnostics-list"></ul><section class="quizify-preview"><div class="quizify-preview-header"><strong>结构预览</strong><span class="quizify-preview-meta"><span class="quizify-preview-field">Front</span><span class="quizify-preview-count">2 个结构</span></span></div><ol class="quizify-preview-list"><li data-kind="fitb"><span class="quizify-preview-kind">填空</span><strong>第 3 行</strong><span class="quizify-preview-detail">答案：面向连接</span></li><li data-kind="recite"><span class="quizify-preview-kind">背诵</span><strong>第 5 行</strong><span class="quizify-preview-detail">遮挡：40%；模式：mixed</span></li></ol></section></div></details>
+            <details class="quizify-command-menu quizify-preview-menu"><summary class="quizify-tool-button quizify-command-summary" title="预览 Front 字段的交互渲染" aria-label="打开 Front 字段的交互渲染预览"><i data-lucide="scan-eye" class="quizify-command-icon"></i></summary><div class="quizify-live-preview-panel"></div></details>
           </div>
         </div>
         <div class="field-mock"># TCP 协议
@@ -116,5 +117,7 @@ TCP 是一种 {{面向连接}} 的传输层协议。
       </div>
     </section>
   </div>
+  <script src="../node_modules/lucide/dist/umd/lucide.js"></script>
+  <script>lucide.createIcons({ attrs: { "aria-hidden": "true", focusable: "false" } });</script>
 </body>
 </html>

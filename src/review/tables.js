@@ -1,3 +1,5 @@
+import { t } from "../shared/i18n.js";
+
 /**
  * Give Markdown tables a full-width scroll shell. Keeping overflow on a
  * wrapper lets the table retain its native table layout instead of shrinking
@@ -15,11 +17,10 @@ export function enhanceMarkdownTables(host = globalThis.document) {
     const shell = documentRef.createElement("div");
     shell.className = "quizify-table-scroll";
     shell.setAttribute("role", "region");
-    shell.setAttribute("aria-label", "可横向滚动的表格");
+    shell.setAttribute("aria-label", t("review.table_scrollable"));
     shell.setAttribute("tabindex", "0");
     table.parentNode?.insertBefore(shell, table);
     shell.appendChild(table);
   });
   return tables;
 }
-

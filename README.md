@@ -6,7 +6,7 @@ Anki Quizify 是一个 Anki 加载项和卡片模板项目。它让你在 Anki �
 
 当前主线实现位于 `quizify_addon/`。仓库根目录的旧模板和资源已经退役：`front.html` / `back.html` 只保留失败关闭的迁移提示，旧 `_myquizify.js` / `_styles.css` 不再提供；实际加载项只使用 `quizify_addon/templates/`、`quizify_addon/_quizify.js` 和 `quizify_addon/_quizify.css`。
 
-当前版本为 **1.1.0**。本版新增面向 Typora 等编辑器的 Quizify Card Markdown 批量导入：支持 YAML 文档配置、卡片级 HTML 注释、多文件预览、精确去重、安全媒体复制与一次撤销，并让 Markdown 图片和 Quizify 音频能随 `.apkg` 正确导出；1.0.16 的 KaTeX 公式保护与资源安全限制保持不变。
+当前版本为 **1.2.0**。本版在 1.1.0 的中、英、俄国际化与统一 SVG 图标系统基础上完成发布前视觉收尾：拉开上下相邻填空及其聚焦外框，精简卡片批注与揭示题型图形，并隔离 Anki WebView 对插件按钮与卡片背景的样式注入。批注气泡现按真实可见区域稳定定位；开务 / 格致背景不再受 reviewer 的 `body.card` 与 `background-position-y` 切割；Android 的三种夜间类名、选择题暗色变量和触屏悬停状态也已统一。插件继续自动跟随 Anki 界面语言，未知语言回退英文；批量导入、媒体安全、KaTeX 公式保护与双主题等既有能力保持不变。
 
 面向用户的发布说明可见 [`docs/release-description.md`](docs/release-description.md)。
 
@@ -28,6 +28,9 @@ Anki Quizify 是一个 Anki 加载项和卡片模板项目。它让你在 Anki �
   - `> [!WARNING]` GitHub 风格提示框
 - 自动把有子层级的 Markdown 列表增强为 Workflowy 风格大纲，每个父项可独立展开或收起。
 - 在 Anki 桌面端编辑器中注入 Quizify 工具栏，提供语法片段、诊断和结构预览。
+- 编辑器、复习卡片与悬浮控制共用可随主题着色的离线 SVG 图标；原创 Quizify 标志、功能含义与状态图形不依赖系统字体或 Emoji。
+- 设置、导入器、编辑器与复习卡片完整支持中文、英文和俄文，并跟随 Anki 界面语言；未知语言统一回退英文。
+- 卡片正文支持 Unicode 文本、组合重音、俄文等西里尔文字及常见中日韩、阿拉伯文字；正文自动判断方向，背诵分词不会再局限于中英文。
 - 完整内置 `marked`、`highlight.js`、`KaTeX`、DOMPurify 与 KaTeX 字体，复习时不依赖网络。
 - 主要支持目标为 Anki Desktop 25.09+ 与 AnkiDroid 2.24+；较早 AnkiDroid 可通过 Android 限定的 reviewer globals 尽力兼容，其他客户端保持基础渲染与本地交互。
 - 提供主题化悬浮复习控制：点击逐项揭示答案，完成后自动翻面，并在支持的
@@ -44,11 +47,14 @@ Anki Quizify 是一个 Anki 加载项和卡片模板项目。它让你在 Anki �
 │   ├── settings.py              # Anki 设置与运行时校验对话框
 │   ├── configuration.py         # 配置迁移和模板配置注入
 │   ├── media.py                 # 哈希清单校验与媒体同步
+│   ├── i18n.py                  # Anki 界面语言识别、复数规则与 Python 翻译入口
+│   ├── locales/                 # 中文、英文、俄文共享词库
 │   ├── notetype.py              # Quizify 笔记类型维护
 │   ├── bridge.py                # 桌面 Reviewer 消息桥
 │   ├── core.py                  # 配置、HTML 规范化和文件比较等纯逻辑
 │   ├── importer/                # Typora/Markdown 卡片集解析、媒体处理和批量导入
 │   ├── _quizify.js              # 复习卡片运行时和 marked 扩展
+│   ├── _quizify-i18n.js         # 三语界面共享离线词库
 │   ├── _quizify.css             # 复习卡片样式
 │   ├── _persistence.js          # anki-persistence，用于正反面状态保存
 │   ├── templates/
@@ -79,7 +85,13 @@ Anki Quizify 是一个 Anki 加载项和卡片模板项目。它让你在 Anki �
 
 开发时也可以把本仓库的 `quizify_addon` 整个目录复制到 Anki 插件目录，目录名可保留为 `quizify_addon` 或改成 `anki_quizify`，随后按上述步骤重启并同步媒体。
 
-加载项启动时会校验 `media-manifest.json`，再把内容有变化的 `_quizify.js`、`_quizify.css`、`_persistence.js` 和 `_quizify-katex-*.woff2` 同步到 Anki 媒体库。
+加载项启动时会校验 `media-manifest.json`，再把内容有变化的 `_quizify-i18n.js`、`_quizify.js`、`_quizify.css`、`_persistence.js` 和 `_quizify-katex-*.woff2` 同步到 Anki 媒体库。
+
+## 界面语言
+
+Quizify 读取 Anki 当前界面语言，并在中文、英文和俄文之间自动切换。语言代码的地区变体会归一化，例如 `ru_RU` 使用俄文、`en_GB` 使用英文、`zh_TW` 使用当前中文词库；法文、德文等尚未提供词库的语言会显示英文。卡片中用户填写的 Markdown 正文不会被翻译。
+
+感谢 [AndreyKaiu](https://github.com/AndreyKaiu) 为项目制作早期英俄国际化实现；这份贡献明确验证了真实需求，并促成主线建立统一词库、Anki 语言跟随、俄语复数规则和全界面覆盖。
 
 AnkiDroid 和 AnkiMobile 不能直接安装桌面加载项。请先在 Desktop 安装或升级、打开对应 profile、重新同步媒体和模板并完成 Anki 同步；移动端完成包含媒体的同步后，强制关闭并重新打开客户端，避免复用升级前已打开的 WebView 资源。
 

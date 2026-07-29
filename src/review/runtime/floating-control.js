@@ -1,3 +1,6 @@
+import { t, tn } from "../../shared/i18n.js";
+import { iconSvg } from "../../shared/icons.js";
+
 export function createFloatingControlRuntime({
   root,
   clearRevealProgress,
@@ -48,24 +51,31 @@ export function createFloatingControlRuntime({
     shell.className = "quizify-floating-control";
     shell.dataset.side = root.isBack ? "back" : "front";
     shell.innerHTML =
-      '<span class="quizify-orb-direction quizify-orb-up">简单</span>' +
-      '<span class="quizify-orb-direction quizify-orb-right">良好</span>' +
-      '<span class="quizify-orb-direction quizify-orb-down">困难</span>' +
-      '<span class="quizify-orb-direction quizify-orb-left">重来</span>' +
-      '<button type="button" class="quizify-orb" aria-describedby="quizify-orb-status">' +
-      '<span class="quizify-orb-eye" aria-hidden="true">' +
-      '<svg viewBox="0 0 24 24"><path d="M2.3 12s3.5-6 9.7-6 9.7 6 9.7 6-3.5 6-9.7 6-9.7-6-9.7-6Zm9.7 3.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Zm0-2a1.4 1.4 0 1 1 0-2.8 1.4 1.4 0 0 1 0 2.8Z"></path></svg>' +
-      "</span>" +
-      '<span class="quizify-orb-complete" aria-hidden="true">✓</span>' +
+      '<span class="quizify-orb-direction quizify-orb-up" aria-hidden="true"></span>' +
+      '<span class="quizify-orb-direction quizify-orb-right" aria-hidden="true"></span>' +
+      '<span class="quizify-orb-direction quizify-orb-down" aria-hidden="true"></span>' +
+      '<span class="quizify-orb-direction quizify-orb-left" aria-hidden="true"></span>' +
+      '<button type="button" class="quizify-orb" data-quizify-control="floating-control" aria-describedby="quizify-orb-status" aria-busy="false">' +
+      `<span class="quizify-orb-state" aria-hidden="true">${iconSvg("eye", { className: "quizify-orb-symbol" })}</span>` +
       '<span class="quizify-orb-count" aria-hidden="true"></span>' +
       "</button>" +
       '<span id="quizify-orb-status" class="quizify-orb-status" aria-live="polite"></span>';
+    for (const [selector, key] of [
+      [".quizify-orb-up", "review.floating.easy"],
+      [".quizify-orb-right", "review.floating.good"],
+      [".quizify-orb-down", "review.floating.hard"],
+      [".quizify-orb-left", "review.floating.again"]
+    ]) {
+      const label = shell.querySelector(selector);
+      if (label) label.textContent = t(key);
+    }
     // Anki replaces the card container between cards but keeps the outer
     // document. Mounting here guarantees the control and its closure are
     // discarded when the reviewer advances.
     cardHost.appendChild(shell);
 
     const button = shell.querySelector(".quizify-orb");
+    const orbState = shell.querySelector(".quizify-orb-state");
     const count = shell.querySelector(".quizify-orb-count");
     const status = shell.querySelector(".quizify-orb-status");
     const platform = root.quizifyPlatform || root.quizifyAnkiDroid;
@@ -146,6 +156,8 @@ export function createFloatingControlRuntime({
       autoFlipPending = false;
       busy = false;
       button.disabled = false;
+      button.setAttribute("aria-busy", "false");
+      update();
       setStatus(message, "error");
     }
 
@@ -255,6 +267,14 @@ export function createFloatingControlRuntime({
       shell.dataset.status = stateName;
     }
 
+    function setOrbState(iconName, stateName) {
+      if (!orbState || shell.dataset.orbState === stateName) return;
+      orbState.innerHTML = iconSvg(iconName, {
+        className: "quizify-orb-symbol"
+      });
+      shell.dataset.orbState = stateName;
+    }
+
     function update() {
       const all = controllers();
       const remaining = remainingControllers();
@@ -266,27 +286,36 @@ export function createFloatingControlRuntime({
         ? "true"
         : "false";
       count.textContent = remaining.length ? String(remaining.length) : "";
+      if (busy) {
+        setOrbState("loader", "busy");
+      } else if (remaining.length) {
+        setOrbState("eye", "reveal");
+      } else if (root.isBack) {
+        setOrbState("move", "rate");
+      } else {
+        setOrbState("flip", "flip");
+      }
 
       if (!root.isBack) {
         button.setAttribute(
           "aria-label",
           remaining.length
-            ? `显示下一个答案，还剩 ${remaining.length} 项`
-            : "显示卡片背面"
+            ? tn("review.floating.front.next_aria", remaining.length)
+            : t("review.floating.front.show_back")
         );
         button.title = remaining.length
-          ? `显示下一个答案（剩余 ${remaining.length}）；长按拖动可调整位置`
-          : "显示卡片背面；长按拖动可调整位置";
+          ? tn("review.floating.front.next_title", remaining.length)
+          : t("review.floating.front.show_back_title");
       } else {
         button.setAttribute(
           "aria-label",
           remaining.length
-            ? `显示下一个背面内容，还剩 ${remaining.length} 项；拖拽可评分`
-            : "向四个方向拖拽选择复习难度"
+            ? tn("review.floating.back.next_aria", remaining.length)
+            : t("review.floating.back.rate_aria")
         );
         button.title = remaining.length
-          ? `显示下一个背面内容（剩余 ${remaining.length}）；长按拖动可调整位置`
-          : "拖拽评分：左重来、下困难、右良好、上简单；长按拖动可调整位置";
+          ? tn("review.floating.back.next_title", remaining.length)
+          : t("review.floating.back.rate_title");
       }
     }
 
@@ -294,21 +323,23 @@ export function createFloatingControlRuntime({
       if (!shell.isConnected || root.isBack || autoFlipPending) return;
       persistCurrentRevealProgress(true);
       if (typeof platform?.showAnswer !== "function") {
-        setStatus("当前客户端不支持自动翻面", "error");
+        setStatus(t("review.floating.unsupported_flip"), "error");
         return;
       }
 
       autoFlipPending = true;
       busy = true;
       button.disabled = true;
-      setStatus("正在显示答案…", "busy");
+      button.setAttribute("aria-busy", "true");
+      setOrbState("loader", "busy");
+      setStatus(t("review.floating.showing_answer"), "busy");
       const response = await callPlatform(() => platform.showAnswer());
       if (!shell.isConnected) return;
       if (!response?.success) {
-        restoreAfterFailedTransition("自动翻面失败，请使用客户端按钮");
+        restoreAfterFailedTransition(t("review.floating.flip_failed"));
         return;
       }
-      watchForCardTransition("客户端未切换到答案面，请使用客户端按钮");
+      watchForCardTransition(t("review.floating.flip_timeout"));
     }
 
     async function revealNext() {
@@ -316,7 +347,7 @@ export function createFloatingControlRuntime({
       const next = remainingControllers()[0];
       if (!next) {
         if (root.isBack) {
-          setStatus("答案已全部显示，可拖拽评分", "ready");
+          setStatus(t("review.floating.ready_rate"), "ready");
         } else {
           await showAnswerSide();
         }
@@ -332,43 +363,56 @@ export function createFloatingControlRuntime({
 
       const remaining = remainingControllers();
       if (!remaining.length && !root.isBack) {
-        setStatus("答案已全部显示，准备翻面", "ready");
+        setStatus(t("review.floating.ready_flip"), "ready");
         scheduleTracked(showAnswerSide, prefersReducedMotion() ? 0 : 320);
       } else if (!remaining.length) {
-        setStatus("答案已全部显示，可拖拽评分", "ready");
+        setStatus(t("review.floating.ready_rate"), "ready");
       } else {
-        setStatus(`已显示一项，还剩 ${remaining.length} 项`, "progress");
+        setStatus(
+          tn("review.floating.revealed_remaining", remaining.length),
+          "progress"
+        );
       }
     }
 
     async function submitEase(direction) {
       if (!shell.isConnected || busy) return;
       if (!root.isBack) {
-        setStatus("请先完成答案并翻面", "warning");
+        setStatus(t("review.floating.finish_before_rating"), "warning");
         return;
       }
 
       const ease = easeForDirection(direction);
       if (!ease || typeof platform?.answerEase !== "function") {
-        setStatus("当前客户端不支持手势评分", "error");
+        setStatus(t("review.floating.unsupported_rating"), "error");
         return;
       }
 
-      const labels = { 1: "重来", 2: "困难", 3: "良好", 4: "简单" };
+      const labels = {
+        1: t("review.floating.again"),
+        2: t("review.floating.hard"),
+        3: t("review.floating.good"),
+        4: t("review.floating.easy")
+      };
       busy = true;
       button.disabled = true;
-      setStatus(`正在选择“${labels[ease]}”…`, "busy");
+      button.setAttribute("aria-busy", "true");
+      setOrbState("loader", "busy");
+      setStatus(
+        t("review.floating.selecting_ease", { ease: labels[ease] }),
+        "busy"
+      );
       const response = await callPlatform(() => platform.answerEase(ease));
       if (!response?.success) {
         if (shell.isConnected) {
-          restoreAfterFailedTransition("评分失败，请使用客户端按钮");
+          restoreAfterFailedTransition(t("review.floating.rating_failed"));
         }
         return;
       }
       clearUserAnswers();
       clearRevealProgress();
       if (!shell.isConnected) return;
-      watchForCardTransition("客户端未完成评分，请使用客户端按钮");
+      watchForCardTransition(t("review.floating.rating_timeout"));
     }
 
     function resetPointerVisuals() {
@@ -412,7 +456,7 @@ export function createFloatingControlRuntime({
         positioning = true;
         shell.dataset.positioning = "true";
         shell.dataset.dragging = "false";
-        setStatus("拖动悬浮球以调整位置", "positioning");
+        setStatus(t("review.floating.positioning"), "positioning");
         root.navigator?.vibrate?.(35);
       }, longPressDuration);
       return true;
@@ -488,7 +532,7 @@ export function createFloatingControlRuntime({
             rect.top + rect.height / 2,
             true
           );
-          setStatus("悬浮球位置已保存", "ready");
+          setStatus(t("review.floating.position_saved"), "ready");
         }
         return;
       }
@@ -498,7 +542,7 @@ export function createFloatingControlRuntime({
       } else if (!wasDragging) {
         await revealNext();
       } else {
-        setStatus("拖动距离不足，未执行操作", "warning");
+        setStatus(t("review.floating.drag_too_short"), "warning");
       }
     }
 
@@ -665,6 +709,18 @@ export function createFloatingControlRuntime({
       }
       preventInteractionDefault(event);
       revealNext();
+    });
+    listen(button, "keydown", (event) => {
+      if (busy || !root.isBack || remainingControllers().length) return;
+      const direction = {
+        ArrowLeft: "left",
+        ArrowDown: "down",
+        ArrowRight: "right",
+        ArrowUp: "up"
+      }[event.key];
+      if (!direction) return;
+      preventInteractionDefault(event);
+      submitEase(direction);
     });
     button.addEventListener("contextmenu", (event) => event.preventDefault());
 

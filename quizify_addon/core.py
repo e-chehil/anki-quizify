@@ -6,6 +6,8 @@ from pathlib import Path
 import re
 import urllib.parse
 
+from .i18n import tr
+
 
 RICH_PASTE_START = "<!--quizify-rich-paste:v1-->"
 RICH_PASTE_END = "<!--/quizify-rich-paste:v1-->"
@@ -19,12 +21,15 @@ SOURCE_MARKER_RE = re.compile(
     r"<!--\s*quizify-source:(start|safe|end):([a-z0-9_-]+)\s*-->",
     re.IGNORECASE,
 )
-SOURCE_ERROR_HTML = (
-    '<div class="quizify-source-error" role="alert">'
-    "Quizify 无法安全显示此卡片：字段包含保留的源边界标记。"
-    "请在编辑器中删除 quizify-source 注释后重试。"
-    "</div>"
-)
+def source_error_html(*, locale: str | None = None) -> str:
+    return (
+        '<div class="quizify-source-error" role="alert">'
+        + escape(tr("core.source_error", locale=locale))
+        + "</div>"
+    )
+
+
+SOURCE_ERROR_HTML = source_error_html(locale="en")
 
 
 def merge_config(defaults: dict, stored) -> dict:
@@ -184,7 +189,10 @@ def normalize_editor_content(content: str) -> str:
 
 
 def protect_quizify_source_regions(
-    content: str, expected_sides: tuple[str, ...] | None = None
+    content: str,
+    expected_sides: tuple[str, ...] | None = None,
+    *,
+    error_html: str | None = None,
 ) -> str:
     """Make marked field HTML inert before Anki sends a card to a WebView.
 
@@ -202,6 +210,7 @@ def protect_quizify_source_regions(
     can use ``textContent`` and a second hook pass is a no-op.
     """
     result = "" if content is None else str(content)
+    failure = SOURCE_ERROR_HTML if error_html is None else str(error_html)
     matches = list(SOURCE_MARKER_RE.finditer(result))
     if not matches and expected_sides is None:
         return result
@@ -212,7 +221,7 @@ def protect_quizify_source_regions(
         for kind in ("start", "safe", "end")
     }
     if any(match.group(0) not in allowed_markers for match in matches):
-        return SOURCE_ERROR_HTML
+        return failure
 
     detected_sides = {
         match.group(2).lower()
@@ -227,10 +236,10 @@ def protect_quizify_source_regions(
             or len(set(sides)) != len(sides)
             or any(side not in SOURCE_SIDES for side in sides)
         ):
-            return SOURCE_ERROR_HTML
+            return failure
 
     if detected_sides != set(sides) or len(matches) != len(sides) * 2:
-        return SOURCE_ERROR_HTML
+        return failure
 
     regions: list[dict[str, int | str]] = []
     for side in sides:
@@ -244,14 +253,14 @@ def protect_quizify_source_regions(
             (1, 0, 1),
             (0, 1, 1),
         }:
-            return SOURCE_ERROR_HTML
+            return failure
 
         opening = start_marker if start_count else safe_marker
         opening_start = result.find(opening)
         body_start = opening_start + len(opening)
         end_start = result.find(end_marker)
         if opening_start < 0 or end_start < body_start:
-            return SOURCE_ERROR_HTML
+            return failure
         regions.append(
             {
                 "side": side,
@@ -268,7 +277,7 @@ def protect_quizify_source_regions(
         > int(regions[index + 1]["opening_start"])
         for index in range(len(regions) - 1)
     ):
-        return SOURCE_ERROR_HTML
+        return failure
 
     # Work from the end so validated offsets remain stable while both fields
     # are rewritten atomically.

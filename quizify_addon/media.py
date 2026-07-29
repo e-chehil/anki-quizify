@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .core import files_identical
+from .i18n import tr
 
 
 MANIFEST_NAME = "media-manifest.json"
@@ -14,17 +15,17 @@ def load_media_manifest(addon_dir: Path) -> dict:
     path = addon_dir / MANIFEST_NAME
     data = json.loads(path.read_text(encoding="utf-8"))
     if data.get("schema_version") != 1 or not isinstance(data.get("files"), dict):
-        raise ValueError("Unsupported Quizify media manifest")
+        raise ValueError(tr("media.manifest_unsupported"))
     return data
 
 
 def verify_media_file(path: Path, expected: dict) -> None:
     data = path.read_bytes()
     if len(data) != expected.get("bytes"):
-        raise ValueError(f"Quizify media size mismatch: {path.name}")
+        raise ValueError(tr("media.size_mismatch", file=path.name))
     digest = hashlib.sha256(data).hexdigest()
     if digest != expected.get("sha256"):
-        raise ValueError(f"Quizify media checksum mismatch: {path.name}")
+        raise ValueError(tr("media.checksum_mismatch", file=path.name))
 
 
 def media_status(addon_dir: Path) -> tuple[int, int, list[str]]:

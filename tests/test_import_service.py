@@ -239,7 +239,7 @@ class ImportServiceTest(unittest.TestCase):
                 fallback_deck="Fallback",
                 request_factory=request,
             )
-        with self.assertRaisesRegex(ValueError, "附加标签"):
+        with self.assertRaisesRegex(ValueError, "Additional tags"):
             service.import_cards(
                 col,
                 notetype_name=NOTETYPE["name"],
@@ -292,7 +292,7 @@ class ImportServiceTest(unittest.TestCase):
                     request_factory=request,
                 )
 
-        self.assertIn("找不到本地媒体", str(raised.exception))
+        self.assertIn("Local media file not found", str(raised.exception))
         self.assertFalse(col.media.added)
         self.assertFalse(col.decks.created)
         self.assertFalse(col.undo_entries)
@@ -322,7 +322,7 @@ class ImportServiceTest(unittest.TestCase):
 
         self.assertEqual(len(diagnostics), 1)
         self.assertEqual(diagnostics[0].severity, "warning")
-        self.assertIn("离线", diagnostics[0].message)
+        self.assertIn("offline", diagnostics[0].message)
 
     def test_failed_bulk_write_rolls_back_custom_undo_entry(self):
         col = FakeCollection(fail_add=True)
@@ -342,7 +342,7 @@ class ImportServiceTest(unittest.TestCase):
     def test_rejects_filtered_deck_and_its_children_before_writing(self):
         col = FakeCollection(filtered=("筛选",))
 
-        with self.assertRaisesRegex(ValueError, "筛选牌组"):
+        with self.assertRaisesRegex(ValueError, "filtered deck"):
             service.import_cards(
                 col,
                 notetype_name=NOTETYPE["name"],

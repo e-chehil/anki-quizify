@@ -199,9 +199,9 @@ class EntrypointTest(unittest.TestCase):
             ["web", "config", "menu", "migrate", "sync", "ensure", "version"],
         )
         self.assertEqual(len(self.warnings), 1)
-        self.assertIn("Web 资源注册", self.warnings[0])
-        self.assertIn("配置迁移", self.warnings[0])
-        self.assertIn("媒体同步", self.warnings[0])
+        self.assertIn("Register web resources", self.warnings[0])
+        self.assertIn("Migrate configuration", self.warnings[0])
+        self.assertIn("Synchronize media", self.warnings[0])
 
     def test_tools_menu_groups_import_and_settings_actions(self):
         self.addon.add_menu()
@@ -209,7 +209,7 @@ class EntrypointTest(unittest.TestCase):
         actions = [action for action in self.menu_actions if action is not None]
         self.assertEqual(
             [action.label for action in actions],
-            ["导入 Markdown 卡片集…", "设置…"],
+            ["Import Markdown Cards…", "Settings…"],
         )
 
     def test_editor_preview_query_includes_normalized_review_theme(self):
@@ -234,6 +234,9 @@ class EntrypointTest(unittest.TestCase):
             }
             content = types.SimpleNamespace(js=[], css=[])
             self.addon.on_webview_set_content(content, self.addon.Editor())
+            self.assertTrue(
+                any("/_quizify-i18n.js?" in url for url in content.js)
+            )
             editor_url = next(url for url in content.js if "/web/editor.js?" in url)
             return parse_qs(urlsplit(editor_url).query)
 
@@ -245,6 +248,7 @@ class EntrypointTest(unittest.TestCase):
                 "ntid": ["42"],
                 "plain": ["0,2"],
                 "theme": ["gezhi"],
+                "lang": ["en"],
             },
         )
         self.assertEqual(editor_query(" GEZHI ")["theme"], ["kaiwu"])
@@ -258,14 +262,18 @@ class EntrypointTest(unittest.TestCase):
         self.assertEqual(self.addon.on_card_will_show(unowned, None, "review"), unowned)
 
         managed = self.addon.MANAGED_TEMPLATE_MARKER + unowned
+        self.addon.current_locale = lambda: "ru"
         protected = self.addon.on_card_will_show(
             managed, None, "reviewQuestion"
         )
+        self.assertIn('globalThis.quizifyLocale="ru"', protected)
         self.assertIn("<!-- quizify-source:safe:front -->", protected)
         self.assertIn("&lt;script&gt;bad()&lt;/script&gt;", protected)
 
     def test_card_hook_fails_closed_on_duplicate_ownership_or_cross_markers(self):
         marker = self.addon.MANAGED_TEMPLATE_MARKER
+        localized_error = '<div class="quizify-source-error">Локализованная ошибка</div>'
+        self.addon.source_error_html = lambda: localized_error
         duplicate_owner = marker + marker + (
             "<!-- quizify-source:start:front -->safe"
             "<!-- quizify-source:end:front -->"
@@ -274,7 +282,7 @@ class EntrypointTest(unittest.TestCase):
             self.addon.on_card_will_show(
                 duplicate_owner, None, "reviewQuestion"
             ),
-            self.addon.SOURCE_ERROR_HTML,
+            localized_error,
         )
 
         cross_field = marker + (
@@ -288,7 +296,7 @@ class EntrypointTest(unittest.TestCase):
         protected = self.addon.on_card_will_show(
             cross_field, None, "reviewAnswer"
         )
-        self.assertEqual(protected, self.addon.SOURCE_ERROR_HTML)
+        self.assertEqual(protected, localized_error)
         self.assertNotIn("<img", protected)
 
     def test_mime_hook_converts_only_external_media_free_quizify_html(self):

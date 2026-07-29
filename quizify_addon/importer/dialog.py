@@ -7,6 +7,7 @@ from typing import Iterable, Sequence
 
 from .parser import ParseResult, ParsedCard, parse_document
 from .service import ImportCard, ImportOutcome, import_cards, validate_cards
+from ..i18n import tr, trn
 
 
 @dataclass(frozen=True)
@@ -39,7 +40,10 @@ def load_markdown_documents(paths: Iterable[str | Path]) -> tuple[LoadedDocument
             result = parse_document(text, source_name=str(path))
         except (OSError, UnicodeError) as exc:
             documents.append(
-                LoadedDocument(path=path, load_error=f"无法读取文件：{exc}")
+                LoadedDocument(
+                    path=path,
+                    load_error=tr("import.file_read_failed", error=exc),
+                )
             )
         else:
             documents.append(LoadedDocument(path=path, result=result))
@@ -161,7 +165,7 @@ def _make_dialog_class():
             self._preflight_diagnostics = ()
             self._running = False
             self._operation = None
-            self.setWindowTitle("导入 Quizify Markdown 卡片集")
+            self.setWindowTitle(tr("import.window_title"))
             self.setMinimumSize(1060, 680)
             self._setup_ui()
             self._populate_diagnostics()
@@ -173,7 +177,7 @@ def _make_dialog_class():
             layout.setContentsMargins(18, 16, 18, 16)
             layout.setSpacing(10)
 
-            title = QLabel("Markdown 批量导入预览")
+            title = QLabel(tr("import.title"))
             title.setProperty("role", "title")
             layout.addWidget(title)
             self.summary = QLabel()
@@ -186,23 +190,31 @@ def _make_dialog_class():
             names = _deck_names(mw.col)
             self.deck.addItems(names)
             self.deck.setCurrentText(_current_deck_name(mw.col, names))
-            form.addRow("默认牌组：", self.deck)
+            form.addRow(tr("import.default_deck"), self.deck)
 
             self.tags = QLineEdit()
-            self.tags.setPlaceholderText("可选；用空格或逗号分隔")
-            form.addRow("附加标签：", self.tags)
+            self.tags.setPlaceholderText(tr("import.extra_tags_hint"))
+            form.addRow(tr("import.extra_tags"), self.tags)
 
             self.duplicate_mode = QComboBox()
             self.duplicate_mode.addItem(
-                "跳过完全相同的 Front + Back（推荐）", "skip"
+                tr("import.duplicates.skip"), "skip"
             )
-            self.duplicate_mode.addItem("全部创建", "create")
-            form.addRow("重复卡片：", self.duplicate_mode)
+            self.duplicate_mode.addItem(tr("import.duplicates.create"), "create")
+            form.addRow(tr("import.duplicates"), self.duplicate_mode)
             layout.addLayout(form)
 
             self.table = QTableWidget(0, 7)
             self.table.setHorizontalHeaderLabels(
-                ["文件", "卡片", "牌组", "Front", "Back", "标签", "状态"]
+                [
+                    tr("import.header.file"),
+                    tr("import.header.card"),
+                    tr("import.header.deck"),
+                    tr("import.header.front"),
+                    tr("import.header.back"),
+                    tr("import.header.tags"),
+                    tr("import.header.status"),
+                ]
             )
             self.table.setAlternatingRowColors(True)
             self.table.setWordWrap(False)
@@ -222,7 +234,7 @@ def _make_dialog_class():
             self.table.horizontalHeader().setStretchLastSection(True)
             layout.addWidget(self.table, 1)
 
-            layout.addWidget(QLabel("错误与警告"))
+            layout.addWidget(QLabel(tr("import.errors_warnings")))
             self.diagnostics = QPlainTextEdit()
             self.diagnostics.setReadOnly(True)
             self.diagnostics.setMaximumHeight(145)
@@ -230,10 +242,10 @@ def _make_dialog_class():
 
             buttons = QHBoxLayout()
             buttons.addStretch()
-            self.cancel_button = QPushButton("取消")
+            self.cancel_button = QPushButton(tr("common.cancel"))
             self.cancel_button.clicked.connect(self.reject)
             buttons.addWidget(self.cancel_button)
-            self.import_button = QPushButton("导入")
+            self.import_button = QPushButton(tr("common.import"))
             self.import_button.setDefault(True)
             self.import_button.clicked.connect(self._start_import)
             buttons.addWidget(self.import_button)
@@ -251,7 +263,7 @@ def _make_dialog_class():
             self, document: LoadedDocument, card: ParsedCard
         ) -> str:
             if card.draft:
-                return "草稿（不导入）"
+                return tr("import.status.draft")
             assert document.result is not None
             relevant = [
                 diagnostic
@@ -259,7 +271,7 @@ def _make_dialog_class():
                 if diagnostic.card_index in {None, card.index}
             ]
             if any(item.is_error for item in relevant):
-                return "错误"
+                return tr("import.status.error")
             preflight = [
                 item
                 for item in self._preflight_diagnostics
@@ -267,10 +279,10 @@ def _make_dialog_class():
                 and card.start_line <= item.line <= card.end_line
             ]
             if any(item.severity == "error" for item in preflight):
-                return "错误"
+                return tr("import.status.error")
             if relevant or preflight:
-                return "警告"
-            return "就绪"
+                return tr("import.status.warning")
+            return tr("import.status.ready")
 
         def _new_item(self, text: str, tooltip: str = ""):
             item = QTableWidgetItem(text)
@@ -291,7 +303,7 @@ def _make_dialog_class():
                 values = (
                     document.path.name,
                     f"#{card.index}",
-                    card.deck or fallback or "（未指定）",
+                    card.deck or fallback or tr("common.not_specified"),
                     _one_line(card.front),
                     _one_line(card.back),
                     " ".join(card.tags),
@@ -299,8 +311,8 @@ def _make_dialog_class():
                 )
                 tooltips = (
                     str(document.path),
-                    f"起始行 {card.start_line}",
-                    card.deck or "使用上方默认牌组",
+                    tr("import.tooltip.start_line", line=card.start_line),
+                    card.deck or tr("import.tooltip.default_deck"),
                     card.front,
                     card.back,
                     " ".join(card.tags),
@@ -312,7 +324,7 @@ def _make_dialog_class():
                     )
 
         def _fallback_deck_changed(self, value: str) -> None:
-            fallback = value.strip() or "（未指定）"
+            fallback = value.strip() or tr("common.not_specified")
             for row, (_, card) in enumerate(self._preview_rows):
                 if not card.deck:
                     self.table.item(row, 2).setText(fallback)
@@ -326,45 +338,74 @@ def _make_dialog_class():
                 if document.load_error:
                     error_count += 1
                     messages.append(
-                        f"[错误] {document.path.name}：{document.load_error}"
+                        tr(
+                            "import.diagnostic.file",
+                            severity=tr("common.error"),
+                            file=document.path.name,
+                            message=document.load_error,
+                        )
                     )
                     continue
                 assert document.result is not None
                 for diagnostic in document.result.diagnostics:
-                    label = "错误" if diagnostic.is_error else "警告"
+                    label = tr(
+                        "common.error" if diagnostic.is_error else "common.warning"
+                    )
                     if diagnostic.is_error:
                         error_count += 1
                     else:
                         warning_count += 1
-                    card = (
-                        f"，卡片 #{diagnostic.card_index}"
+                    key = (
+                        "import.diagnostic.card"
                         if diagnostic.card_index is not None
-                        else ""
+                        else "import.diagnostic.line"
                     )
                     messages.append(
-                        f"[{label}] {document.path.name}:{diagnostic.line}{card}："
-                        f"{diagnostic.message}"
+                        tr(
+                            key,
+                            severity=label,
+                            file=document.path.name,
+                            line=diagnostic.line,
+                            card=diagnostic.card_index,
+                            message=diagnostic.message,
+                        )
                     )
             self._preflight_diagnostics = validate_cards(
                 self.cards, self.deck.currentText().strip()
             )
             for diagnostic in self._preflight_diagnostics:
-                label = "错误" if diagnostic.severity == "error" else "警告"
+                label = tr(
+                    "common.error"
+                    if diagnostic.severity == "error"
+                    else "common.warning"
+                )
                 if diagnostic.severity == "error":
                     error_count += 1
                 else:
                     warning_count += 1
                 messages.append(
-                    f"[{label}] {diagnostic.source_path.name}:{diagnostic.line}："
-                    f"{diagnostic.message}"
+                    tr(
+                        "import.diagnostic.line",
+                        severity=label,
+                        file=diagnostic.source_path.name,
+                        line=diagnostic.line,
+                        message=diagnostic.message,
+                    )
                 )
             self.diagnostics.setPlainText(
-                "\n".join(messages) if messages else "未发现解析错误或警告。"
+                "\n".join(messages) if messages else tr("import.no_diagnostics")
             )
             drafts = sum(1 for card in self.cards if card.draft)
+            summary_parts = (
+                trn("import.summary.files", len(self.documents)),
+                trn("import.summary.cards", len(self.cards)),
+                trn("import.summary.drafts", drafts),
+                trn("import.summary.errors", error_count),
+                trn("import.summary.warnings", warning_count),
+            )
             self.summary.setText(
-                f"已读取 {len(self.documents)} 个文件，共 {len(self.cards)} 张卡片；"
-                f"草稿 {drafts} 张，错误 {error_count} 项，警告 {warning_count} 项。"
+                tr("common.clause_separator").join(summary_parts)
+                + tr("common.sentence_end")
             )
 
         def _update_import_enabled(self) -> None:
@@ -391,7 +432,7 @@ def _make_dialog_class():
                 return
             self._running = True
             self.import_button.setEnabled(False)
-            self.import_button.setText("正在导入…")
+            self.import_button.setText(tr("import.in_progress"))
             self.cancel_button.setEnabled(False)
             duplicate_mode = self.duplicate_mode.currentData() or "skip"
             fallback_deck = self.deck.currentText().strip()
@@ -427,25 +468,36 @@ def _make_dialog_class():
             self._running = False
             self._operation = None
             self.cancel_button.setEnabled(True)
-            details = (
-                f"已创建 {outcome.created} 张卡片，"
-                f"跳过重复 {outcome.skipped} 张，"
-                f"忽略草稿 {outcome.drafts} 张。"
-            )
+            details = tr("common.clause_separator").join(
+                (
+                    trn("import.result.created", outcome.created),
+                    trn("import.result.skipped", outcome.skipped),
+                    trn("import.result.drafts", outcome.drafts),
+                )
+            ) + tr("common.sentence_end")
             if outcome.copied_media:
-                details += f"\n已复制 {len(outcome.copied_media)} 个媒体文件。"
+                details += "\n" + trn(
+                    "import.result.media", len(outcome.copied_media)
+                )
             warnings = [
                 item for item in outcome.diagnostics if item.severity != "error"
             ]
             if warnings:
-                details += f"\n导入过程中另有 {len(warnings)} 项媒体警告："
+                details += "\n" + trn(
+                    "import.result.media_warnings", len(warnings)
+                )
                 for warning in warnings[:3]:
-                    details += (
-                        f"\n- {warning.source_path.name}:{warning.line}："
-                        f"{warning.message}"
+                    details += "\n- " + tr(
+                        "import.diagnostic.line",
+                        severity=tr("common.warning"),
+                        file=warning.source_path.name,
+                        line=warning.line,
+                        message=warning.message,
                     )
                 if len(warnings) > 3:
-                    details += f"\n- 另有 {len(warnings) - 3} 项未列出"
+                    details += "\n- " + trn(
+                        "import.result.omitted", len(warnings) - 3
+                    )
             QMessageBox.information(self, "Quizify Markdown", details)
             self.accept()
 
@@ -453,13 +505,12 @@ def _make_dialog_class():
             self._running = False
             self._operation = None
             self.cancel_button.setEnabled(True)
-            self.import_button.setText("导入")
+            self.import_button.setText(tr("common.import"))
             self._update_import_enabled()
             QMessageBox.warning(
                 self,
                 "Quizify Markdown",
-                "导入失败；卡片写入已尽力回滚，已复制的媒体文件可能保留。"
-                f"\n\n{error}",
+                tr("import.failed", error=error),
             )
 
         def reject(self) -> None:
@@ -484,9 +535,9 @@ def show_import_dialog(parent=None) -> None:
     owner = parent or mw
     paths, _ = QFileDialog.getOpenFileNames(
         owner,
-        "选择 Quizify Markdown 文件",
+        tr("import.select_files"),
         "",
-        "Markdown 文件 (*.md *.markdown);;所有文件 (*)",
+        tr("import.file_filter"),
     )
     if not paths:
         return

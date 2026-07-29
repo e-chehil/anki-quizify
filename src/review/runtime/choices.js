@@ -1,4 +1,5 @@
 import { resolveRuntimeLifecycle } from "../lifecycle.js";
+import { t } from "../../shared/i18n.js";
 
 function updateSelectedClasses(inputs, labels) {
   labels.forEach((label) => label.classList.remove("selected"));
@@ -85,7 +86,13 @@ export function initChoices({
       userAnswers.mcqs[name] = [];
       saveUserAnswers(userAnswers);
       if (shouldShuffle) shuffleOptions();
-      feedback.textContent = `${correct.length === 1 ? "单选题" : "多选题"} | 点击显示答案`;
+      feedback.textContent = t("review.choice.show_answer", {
+        type: t(
+          correct.length === 1
+            ? "review.choice.single"
+            : "review.choice.multiple"
+        )
+      });
       feedback.classList.remove("correct", "incorrect", "incomplete");
       feedback.dataset.isAnswered = "false";
     }
@@ -107,18 +114,22 @@ export function initChoices({
       const selected = selectedAnswers();
       feedback.classList.remove("correct", "incorrect", "incomplete");
       if (!selected.length) {
-        feedback.textContent = "你没有回答";
+        feedback.textContent = t("review.choice.unanswered");
         feedback.classList.add("incorrect");
       } else if (JSON.stringify(selected) === JSON.stringify(correct)) {
-        feedback.textContent = "回答正确";
+        feedback.textContent = t("review.choice.correct");
         feedback.classList.add("correct");
       } else {
-        feedback.textContent = `你的答案：${selected.join("")}`;
+        feedback.textContent = t("review.choice.yours", {
+          answer: selected.join("")
+        });
         feedback.classList.add(
           selected.every((value) => correct.includes(value)) ? "incomplete" : "incorrect"
         );
       }
-      feedback.textContent += ` | 正确答案：${correct.join("")}`;
+      feedback.textContent += ` | ${t("review.choice.correct_answer", {
+        answer: correct.join("")
+      })}`;
 
       labels.forEach((label) => {
         const input = label.querySelector("input");

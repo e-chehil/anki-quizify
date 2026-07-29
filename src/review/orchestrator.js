@@ -25,6 +25,7 @@ import {
   hasExcessiveMathDelimiters,
   protectMathPipes
 } from "../shared/math.js";
+import { t } from "../shared/i18n.js";
 
 (function (root, factory) {
   const api = factory(root || {});
@@ -102,7 +103,7 @@ import {
       const text = String(source ?? "");
       if (hasExcessiveMathDelimiters(text)) {
         return sanitizeRenderedHtml(
-          '<p class="quizify-math-limit">公式定界符过多，已按纯文本显示以保护页面性能。</p>' +
+          `<p class="quizify-math-limit">${escapeHtml(t("review.math_limit"))}</p>` +
             `<pre class="quizify-math-limit-source">${escapeHtml(text)}</pre>`
         );
       }
@@ -155,6 +156,10 @@ import {
 
     const theme = normalizeReviewTheme(config?.review?.theme);
     root.document.documentElement?.setAttribute("data-quizify-theme", theme);
+    root.document.body?.setAttribute?.("data-quizify-theme", theme);
+    root.document.querySelectorAll(".quizify-stage").forEach((stage) => {
+      stage.setAttribute?.("data-quizify-theme", theme);
+    });
 
     const containers = root.document.querySelectorAll(".container");
     containers.forEach((container) => {
@@ -183,7 +188,7 @@ import {
       jsx: "JSX",
       markdown: "Markdown",
       md: "Markdown",
-      plaintext: "Text",
+      plaintext: t("review.code_text"),
       python: "Python",
       py: "Python",
       shell: "Shell",
@@ -203,10 +208,12 @@ import {
         name.startsWith("language-")
       );
       const language = languageClass ? languageClass.slice(9).toLowerCase() : "";
-      const label = labels[language] || (language ? language.toUpperCase() : "Code");
+      const label =
+        labels[language] ||
+        (language ? language.toUpperCase() : t("review.code"));
       pre.dataset.quizifyLanguage = label;
       pre.setAttribute("tabindex", "0");
-      pre.setAttribute("aria-label", `${label} 代码块`);
+      pre.setAttribute("aria-label", t("review.code_block", { language: label }));
     });
   }
 
@@ -218,7 +225,7 @@ import {
 
       const message = root.document.createElement("div");
       message.className = "quizify-dependency-error";
-      message.textContent = `${name} 未加载，Quizify Markdown 暂时无法渲染。请在 Quizify 设置中校验并重新同步本地媒体后重试。`;
+      message.textContent = t("review.dependency_error", { name });
       field.prepend(message);
     });
   }
@@ -252,7 +259,7 @@ import {
         ? new TextEncoder().encode(source).byteLength
         : source.length * 2;
     if (sourceBytes > MAX_FIELD_BYTES) {
-      field.textContent = "Quizify 无法渲染：当前字段超过 512 KiB 安全上限。";
+      field.textContent = t("review.field_too_large");
       field.classList.add("quizify-render-error");
       return;
     }
@@ -262,7 +269,9 @@ import {
       field.innerHTML = renderer(source);
       field.classList.remove("quizify-render-error");
     } catch (error) {
-      field.textContent = `Quizify 渲染失败：${error?.message || "未知错误"}`;
+      field.textContent = t("review.render_failed", {
+        error: error?.message || t("common.unknown_error")
+      });
       field.classList.add("quizify-render-error");
     }
   }

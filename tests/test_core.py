@@ -1,14 +1,12 @@
-import importlib.util
 import json
 from pathlib import Path
 import tempfile
 import unittest
 
+from helpers import load_module
 
-CORE_PATH = Path(__file__).resolve().parents[1] / "quizify_addon" / "core.py"
-spec = importlib.util.spec_from_file_location("quizify_core", CORE_PATH)
-core = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(core)
+
+core = load_module("core")
 
 
 class CoreTest(unittest.TestCase):

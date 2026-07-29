@@ -163,6 +163,14 @@ function disposeHarness(harness) {
   harness.dom.window.close();
 }
 
+test("floating control marks its native button as Quizify-owned", () => {
+  const harness = createHarness({ isBack: false });
+  const button = harness.control.element.querySelector("button.quizify-orb");
+
+  assert.equal(button.dataset.quizifyControl, "floating-control");
+  disposeHarness(harness);
+});
+
 test("floating control reveals the final item and schedules the answer side", async () => {
   let revealed = false;
   const element = { isConnected: true };
@@ -255,7 +263,7 @@ test("floating control watchdog unlocks after a false-success transition", async
   assert.equal(button.disabled, false);
   assert.match(
     harness.control.element.querySelector(".quizify-orb-status").textContent,
-    /未切换/
+    /未显示答案/
   );
   harness.control.destroy();
   harness.dom.window.close();
@@ -582,4 +590,58 @@ test("keyboard activation is handled once through the native button click", asyn
   await settle(harness.root);
 
   assert.deepEqual(revealed, [true, false]);
+});
+
+test("floating control uses accessible shared SVG states and hides visual direction labels", (t) => {
+  const frontReveal = createHarness({
+    isBack: false,
+    controllers: [{ element: {}, isRevealed: () => false, reveal() {} }]
+  });
+  t.after(() => disposeHarness(frontReveal));
+  assert.equal(frontReveal.control.element.dataset.orbState, "reveal");
+  assert.equal(
+    frontReveal.control.element.querySelector(".quizify-orb-symbol").getAttribute("viewBox"),
+    "0 0 24 24"
+  );
+  assert.equal(
+    frontReveal.control.element.querySelector(".quizify-orb-symbol").getAttribute("focusable"),
+    "false"
+  );
+  assert(
+    Array.from(frontReveal.control.element.querySelectorAll(".quizify-orb-direction")).every(
+      (label) => label.getAttribute("aria-hidden") === "true"
+    )
+  );
+
+  const frontFlip = createHarness({ isBack: false });
+  t.after(() => disposeHarness(frontFlip));
+  assert.equal(frontFlip.control.element.dataset.orbState, "flip");
+
+  const backRate = createHarness({ isBack: true });
+  t.after(() => disposeHarness(backRate));
+  assert.equal(backRate.control.element.dataset.orbState, "rate");
+});
+
+test("arrow keys submit the four rating directions after back-side reveals finish", async () => {
+  for (const [key, ease] of [
+    ["ArrowLeft", 1],
+    ["ArrowDown", 2],
+    ["ArrowRight", 3],
+    ["ArrowUp", 4]
+  ]) {
+    const harness = createHarness({ isBack: true });
+    const button = harness.control.element.querySelector(".quizify-orb");
+    const event = new harness.root.KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      key
+    });
+
+    button.dispatchEvent(event);
+    await settle(harness.root);
+
+    assert.equal(event.defaultPrevented, true, key);
+    assert.deepEqual(harness.calls.answerEase, [ease], key);
+    disposeHarness(harness);
+  }
 });

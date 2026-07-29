@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .core import config_json_for_html
+from .i18n import tr
 
 
 SCHEMA_VERSION = 1
@@ -12,8 +13,8 @@ DEFAULT_NOTE_TYPE = "Quizify Markdown"
 DEVELOPER_CONTACT = "chehil@163.com"
 DEFAULT_REVIEW_THEME = "kaiwu"
 REVIEW_THEME_OPTIONS = (
-    ("kaiwu", "开务"),
-    ("gezhi", "格致"),
+    ("kaiwu", "settings.theme.kaiwu"),
+    ("gezhi", "settings.theme.gezhi"),
 )
 REVIEW_THEMES = tuple(identifier for identifier, _label in REVIEW_THEME_OPTIONS)
 
@@ -135,7 +136,7 @@ def apply_config_transaction(
         notetype_attempted = True
         actual_name = ensure_notetype(deepcopy(candidate))
         if not isinstance(actual_name, str) or not actual_name.strip():
-            raise RuntimeError("notetype update returned an invalid name")
+            raise RuntimeError(tr("configuration.invalid_notetype_result"))
         candidate["note_type"] = actual_name.strip()
         config_attempted = True
         write_config(deepcopy(candidate))

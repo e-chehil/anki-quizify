@@ -4,8 +4,12 @@ import test from "node:test";
 import { JSDOM, VirtualConsole } from "jsdom";
 
 const bundle = await readFile(new URL("../quizify_addon/_quizify.js", import.meta.url), "utf8");
+const catalogs = await readFile(
+  new URL("../quizify_addon/_quizify-i18n.js", import.meta.url),
+  "utf8"
+);
 
-function runtime(body = "") {
+function runtime(body = "", locale = "en") {
   const virtualConsole = new VirtualConsole();
   const dom = new JSDOM(`<!doctype html><body>${body}</body>`, {
     runScripts: "dangerously",
@@ -13,13 +17,40 @@ function runtime(body = "") {
     virtualConsole
   });
   dom.window.TextEncoder = TextEncoder;
+  dom.window.quizifyLocale = locale;
   dom.window.HTMLCanvasElement.prototype.getContext = () => ({
     font: "",
     measureText: (value) => ({ width: String(value).length * 8 })
   });
+  dom.window.eval(catalogs);
   dom.window.eval(bundle);
   return dom;
 }
+
+test("built card runtime localizes Russian UI and falls back to English", () => {
+  const config = JSON.stringify({
+    schema_version: 1,
+    review: { cardless: false, floating_control: false },
+    platform: { ankidroid_api: true }
+  });
+  const body =
+    `<script type="application/json" id="quizify-config">${config}</script>` +
+    '<span data-quizify-i18n="common.answer">Answer</span>' +
+    '<main id="note-container"><section id="front" class="quizify-field">Text</section></main>';
+
+  const russian = runtime(body, "ru_RU");
+  russian.window.Quizify.boot({ side: "front" });
+  const russianLabel = russian.window.document.querySelector("[data-quizify-i18n]");
+  assert.equal(russianLabel.textContent, "Ответ");
+  assert.equal(russianLabel.getAttribute("lang"), "ru");
+
+  const fallback = runtime(body, "fr_FR");
+  fallback.window.Quizify.boot({ side: "front" });
+  assert.equal(
+    fallback.window.document.querySelector("[data-quizify-i18n]").textContent,
+    "Answer"
+  );
+});
 
 function renderedField(source) {
   const config = JSON.stringify({
@@ -59,9 +90,128 @@ test("audio controls retain safe SVG icons after sanitization", () => {
   const player = fragment.querySelector(".audio-player");
   assert(player);
   assert.equal(player.querySelectorAll("svg.audio-icon").length, 4);
+  assert.equal(player.querySelectorAll("button[data-quizify-control]").length, 5);
   assert(player.querySelector(".audio-icon-play path"));
-  assert(player.querySelector(".audio-icon-pause path"));
+  assert(player.querySelector(".audio-icon-pause > *"));
+  assert(
+    Array.from(player.querySelectorAll("svg.audio-icon")).every(
+      (icon) =>
+        icon.getAttribute("viewBox") === "0 0 24 24" &&
+        icon.getAttribute("aria-hidden") === "true"
+    )
+  );
   assert.doesNotMatch(html, /onload|<script/i);
+});
+
+test("interactive review extensions expose SVG icons and disclosure semantics", () => {
+  const dom = runtime();
+  const html = dom.window.Quizify.renderMarkdown(
+    "> [!TIP]\n> Keep going.\n\n" +
+      ":::: recite mask=40\nRemember %%this%%.\n::::\n\n" +
+      "[term]^(note)^ [[question||answer]] {{42}}\n\n" +
+      ";;;\nA. One\nB. Two\n;;;AB\n"
+  );
+  const fragment = JSDOM.fragment(html);
+  const annotation = fragment.querySelector('.annotation[role="button"]');
+  const reveal = fragment.querySelector('.reveal[role="button"]');
+  const tooltip = fragment.querySelector('.tooltip[role="tooltip"]');
+
+  assert(fragment.querySelector(".markdown-alert-icon"));
+  assert(fragment.querySelector(".quizify-recite-shuffle-icon"));
+  assert(fragment.querySelector("button.feedback-icon .fitb-feedback-symbol"));
+  assert(fragment.querySelector('.choice[data-quizify-kind="multiple"] .choice-check-icon'));
+  assert.equal(annotation.querySelector("svg"), null);
+  assert(reveal.querySelector("svg.reveal-icon"));
+  assert.deepEqual(
+    Array.from(fragment.querySelectorAll("button[data-quizify-control]"), (button) =>
+      button.dataset.quizifyControl
+    ).sort(),
+    ["choice-feedback", "fitb-reveal", "recite-shuffle"]
+  );
+  assert.equal(annotation.getAttribute("tabindex"), "0");
+  assert.equal(annotation.getAttribute("aria-expanded"), "false");
+  assert.equal(annotation.getAttribute("aria-controls"), tooltip.id);
+  assert.equal(annotation.getAttribute("aria-describedby"), tooltip.id);
+  assert(tooltip.querySelector(".tooltip-content"));
+  assert.equal(reveal.getAttribute("tabindex"), "0");
+  assert.equal(reveal.getAttribute("aria-expanded"), "false");
+  assert.equal(reveal.getAttribute("aria-controls"), reveal.querySelector(".secret").id);
+  assert(
+    Array.from(fragment.querySelectorAll("svg")).every(
+      (icon) =>
+        icon.getAttribute("viewBox") === "0 0 24 24" &&
+        icon.getAttribute("aria-hidden") === "true"
+    )
+  );
+});
+
+test("adjacent hard-broken fills stay in one paragraph with two independent controls", () => {
+  const dom = runtime();
+  const fragment = JSDOM.fragment(
+    dom.window.Quizify.renderMarkdown("第一行 {{alpha}}  \n第二行 {{beta}}")
+  );
+  const paragraph = fragment.querySelector("p");
+
+  assert(paragraph);
+  assert(paragraph.querySelector("br"));
+  assert.equal(paragraph.querySelectorAll(".fitb").length, 2);
+  assert.deepEqual(
+    Array.from(paragraph.querySelectorAll(".fitb input"), (input) => input.name),
+    ["preview-fitb-0", "preview-fitb-1"]
+  );
+});
+
+test("user-authored native buttons do not receive Quizify control ownership", () => {
+  const dom = runtime();
+  const fragment = JSDOM.fragment(
+    dom.window.Quizify.renderMarkdown('<button id="user-button" type="button">Native</button>')
+  );
+  const button = fragment.querySelector("#user-button");
+
+  assert(button);
+  assert.equal(button.hasAttribute("data-quizify-control"), false);
+});
+
+test("reveal and annotation disclosures support keyboard operation", () => {
+  const config = JSON.stringify({
+    schema_version: 1,
+    review: { cardless: false, floating_control: false },
+    platform: { ankidroid_api: true }
+  });
+  const dom = runtime(
+    `<script type="application/json" id="quizify-config">${config}</script>` +
+      '<main id="note-container"><section id="front" class="quizify-field">[[Question||Answer]] [Term]^(Note)^</section></main>'
+  );
+  dom.window.Quizify.boot({ side: "front" });
+
+  const reveal = dom.window.document.querySelector(".reveal");
+  reveal.dispatchEvent(
+    new dom.window.KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      key: " "
+    })
+  );
+  assert.equal(reveal.getAttribute("aria-expanded"), "true");
+  assert.equal(reveal.querySelector(".secret").getAttribute("aria-hidden"), "false");
+
+  const annotation = dom.window.document.querySelector(".annotation");
+  annotation.dispatchEvent(
+    new dom.window.KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      key: "Enter"
+    })
+  );
+  assert.equal(annotation.getAttribute("aria-expanded"), "true");
+  annotation.dispatchEvent(
+    new dom.window.KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      key: "Escape"
+    })
+  );
+  assert.equal(annotation.getAttribute("aria-expanded"), "false");
 });
 
 test("Anki-encoded blockquotes and alerts render as block structures", () => {
@@ -93,7 +243,7 @@ test("boot is idempotent and enforces the 512 KiB field limit", () => {
   const field = dom.window.document.getElementById("front");
   field.__quizifyMarkdownSource = "x".repeat(512 * 1024 + 1);
   dom.window.myquizify.renderQuizify("#front");
-  assert.match(field.textContent, /超过 512 KiB/);
+  assert.match(field.textContent, /exceeds the 512 KiB safety limit/);
 });
 
 test("annotation global listeners are released across boot and destroy", () => {
@@ -912,7 +1062,7 @@ test("malformed delimiter floods stay bounded", () => {
   const html = dom.window.Quizify.renderMarkdown(source);
   const elapsed = performance.now() - started;
 
-  assert.match(html, /公式定界符过多/);
+  assert.match(html, /Too many math delimiters/);
   assert.match(html, /\(/);
   assert(elapsed < 1500, `malformed math parse took ${elapsed.toFixed(0)} ms`);
 });
@@ -1084,7 +1234,7 @@ test("nested Markdown lists become independently collapsible outlines", () => {
   assert(gearBullet.getAttribute("aria-pressed") === "true");
   const breadcrumbs = root.previousElementSibling;
   assert(breadcrumbs.classList.contains("quizify-outline-breadcrumbs"));
-  assert.match(breadcrumbs.textContent, /全部条目.*Camping.*Gear/);
+  assert.match(breadcrumbs.textContent, /All items.*Camping.*Gear/);
   assert.equal(root.querySelectorAll(".quizify-outline-zoom-focus").length, 1);
 
   breadcrumbs.querySelector(".quizify-outline-crumb").click();

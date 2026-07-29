@@ -66,7 +66,7 @@ Back
 
         self.assertEqual(len(documents), 2)
         self.assertTrue(documents[0].has_errors)
-        self.assertIn("无法读取文件", documents[0].load_error)
+        self.assertIn("Could not read the file", documents[0].load_error)
         self.assertFalse(documents[1].has_errors)
         self.assertEqual(len(dialog.map_import_cards(documents)), 1)
 

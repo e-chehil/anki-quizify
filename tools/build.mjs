@@ -14,6 +14,22 @@ const release = args.has("--release");
 const addon = path.join(root, "quizify_addon");
 const web = path.join(addon, "web");
 const licenses = path.join(addon, "licenses");
+
+const WINDOWS_OUTPUT_LOCK = /user-mapped section open|EBUSY|EPERM/i;
+async function buildWithRetry(options) {
+  const attempts = process.platform === "win32" ? 4 : 1;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await build(options);
+    } catch (error) {
+      const transient = WINDOWS_OUTPUT_LOCK.test(String(error?.message || error));
+      if (!transient || attempt === attempts) throw error;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 150));
+    }
+  }
+  throw new Error("Build retry loop ended unexpectedly");
+}
+
 await mkdir(web, { recursive: true });
 await mkdir(licenses, { recursive: true });
 await copyFile(
@@ -25,7 +41,8 @@ for (const [source, target] of [
   ["katex/LICENSE", "katex-LICENSE.txt"],
   ["highlight.js/LICENSE", "highlight.js-LICENSE.txt"],
   ["dompurify/LICENSE", "DOMPurify-Apache-LICENSE.txt"],
-  ["dompurify/LICENSE-MPL", "DOMPurify-MPL-LICENSE.txt"]
+  ["dompurify/LICENSE-MPL", "DOMPurify-MPL-LICENSE.txt"],
+  ["lucide/LICENSE", "lucide-ISC-LICENSE.txt"]
 ]) {
   await copyFile(path.join(root, "node_modules", source), path.join(licenses, target));
 }
@@ -54,13 +71,20 @@ const katexWoff2Only = {
   }
 };
 
+await buildWithRetry({
+  ...common,
+  entryPoints: [path.join(root, "src/shared/i18n-catalogs.js")],
+  outfile: path.join(addon, "_quizify-i18n.js"),
+  format: "iife"
+});
+
 for (const name of await readdir(addon)) {
   if (/^_quizify-katex-/.test(name)) {
     await rm(path.join(addon, name), { force: true });
   }
 }
 
-await build({
+await buildWithRetry({
   ...common,
   entryPoints: [path.join(root, "src/review/entry.js")],
   outfile: path.join(addon, "_quizify.js"),
@@ -70,7 +94,7 @@ await build({
   }
 });
 
-await build({
+await buildWithRetry({
   ...common,
   entryPoints: [path.join(root, "src/review/bundle.css")],
   outfile: path.join(addon, "_quizify.css"),
@@ -81,14 +105,14 @@ await build({
 
 const bundledReviewCss = await readFile(path.join(addon, "_quizify.css"), "utf8");
 
-await build({
+await buildWithRetry({
   ...common,
   entryPoints: [path.join(root, "src/editor/entry.js")],
   outfile: path.join(web, "editor.js"),
   format: "iife"
 });
 
-await build({
+await buildWithRetry({
   ...common,
   entryPoints: [path.join(root, "src/editor/preview-entry.js")],
   outfile: path.join(web, "editor-preview.js"),
@@ -98,7 +122,7 @@ await build({
   }
 });
 
-await build({
+await buildWithRetry({
   ...common,
   entryPoints: [path.join(root, "src/shared/syntax-tools.js")],
   outfile: path.join(web, "syntax-tools.js"),
@@ -108,13 +132,15 @@ await build({
   }
 });
 
-await build({
+await buildWithRetry({
   ...common,
   entryPoints: [path.join(root, "src/editor/styles.css")],
   outfile: path.join(web, "editor.css")
 });
 
-const mediaNames = (await readdir(addon)).filter((name) => /^_quizify(?:-katex-.*\.(?:woff2?|ttf)|\.(?:js|css))$/.test(name));
+const mediaNames = (await readdir(addon)).filter((name) =>
+  /^_quizify(?:-i18n\.js|-katex-.*\.(?:woff2?|ttf)|\.(?:js|css))$/.test(name)
+);
 mediaNames.push("_persistence.js");
 const files = {};
 for (const name of mediaNames.sort()) {

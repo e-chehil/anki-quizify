@@ -8,9 +8,11 @@ const front = fs.readFileSync(path.join(root, "quizify_addon/templates/front.htm
 const back = fs.readFileSync(path.join(root, "quizify_addon/templates/back.html"), "utf8");
 const preview = fs.readFileSync(path.join(root, "docs/visual-preview.html"), "utf8");
 const workbench = fs.readFileSync(path.join(root, "docs/workbench-preview.html"), "utf8");
+const reviewerFixture = fs.readFileSync(path.join(root, "docs/icon-system-preview.html"), "utf8");
 const editorCss = fs.readFileSync(path.join(root, "quizify_addon/web/editor.css"), "utf8");
 const editorJs = fs.readFileSync(path.join(root, "quizify_addon/web/editor.js"), "utf8");
 const settings = fs.readFileSync(path.join(root, "quizify_addon/settings.py"), "utf8");
+const configuration = fs.readFileSync(path.join(root, "quizify_addon/configuration.py"), "utf8");
 const reviewSourceCss = fs.readFileSync(path.join(root, "src/review/styles.css"), "utf8");
 
 function ruleFor(selector) {
@@ -44,7 +46,13 @@ for (const template of [front, back]) {
   for (const contract of ["quizify-stage", "quizify-card-header", "quizify-deck-mark", "quizify-side-label", "quizify-side-content"]) {
     assert(template.includes(contract), `template missing visual contract: ${contract}`);
   }
+  assert.match(template, /class="quizify-brand-icon"/);
+  assert.doesNotMatch(template, /quizify-deck-mark[^>]*>Q</);
 }
+const frontBrand = front.match(/<svg[^>]*class="quizify-brand-icon"[\s\S]*?<\/svg>/)?.[0];
+const backBrand = back.match(/<svg[^>]*class="quizify-brand-icon"[\s\S]*?<\/svg>/)?.[0];
+assert(frontBrand, "front template must contain the Quizify SVG brand mark");
+assert.equal(backBrand, frontBrand, "front and back must use identical SVG brand geometry");
 assert(back.includes('data-quizify-side="back"'));
 assert(back.includes('id="answer" role="separator"'));
 
@@ -55,6 +63,7 @@ for (const token of ["--q-bg-deep", "--q-primary-glow", "--q-control-primary", "
 const choiceRule = ruleFor(".choice");
 const checkmarkRule = ruleFor(".checkmark");
 const optionSequenceRule = ruleFor(".option-seq");
+const fitbRule = ruleFor(".fitb");
 assert(choiceRule.includes("--q-choice-marker-size: 28px"));
 for (const markerRule of [checkmarkRule, optionSequenceRule]) {
   assert(markerRule.includes("width: var(--q-choice-marker-size)"));
@@ -62,10 +71,12 @@ for (const markerRule of [checkmarkRule, optionSequenceRule]) {
   assert(markerRule.includes("margin: 0 12px 0 0"));
 }
 assert(checkmarkRule.includes("box-sizing: border-box"));
+assert.equal(declarationValue(fitbRule, "margin"), "5px 0.18em");
 
 const baseThemeRule = ruleFor(":host");
+const baseNightRule = ruleFor(":host(.night_mode)");
 const gezhiLightRule = ruleFor(':host([data-quizify-theme="gezhi"])');
-const gezhiNightRule = ruleFor(':host(.night-mode) [data-quizify-theme="gezhi"]');
+const gezhiNightRule = ruleFor(':host(.night_mode) [data-quizify-theme="gezhi"]');
 const baseThemeTokens = customProperties(baseThemeRule);
 for (const [mode, themeRule] of [["light", gezhiLightRule], ["night", gezhiNightRule]]) {
   const themeTokens = customProperties(themeRule);
@@ -112,12 +123,14 @@ for (const contract of [
   assert(gezhiNightRule.includes(contract), `格致 night missing legacy detail: ${contract}`);
 }
 const choiceStateTokens = [
+  "--q-choice-feedback-fg", "--q-choice-feedback-bg", "--q-choice-feedback-border",
   "--q-choice-correct-fg", "--q-choice-correct-bg", "--q-choice-correct-border",
   "--q-choice-incorrect-fg", "--q-choice-incorrect-bg", "--q-choice-incorrect-border",
   "--q-choice-incomplete-fg", "--q-choice-incomplete-bg", "--q-choice-incomplete-border"
 ];
 for (const [mode, themeRule] of [
   ["base", baseThemeRule],
+  ["base night", baseNightRule],
   ["格致 light", gezhiLightRule],
   ["格致 night", gezhiNightRule]
 ]) {
@@ -172,7 +185,9 @@ for (const selector of [
   ':root[data-quizify-theme="gezhi"]',
   ':host([data-quizify-theme="gezhi"])',
   ':host([data-quizify-theme="gezhi"].nightMode)',
+  ':host([data-quizify-theme="gezhi"].night_mode)',
   '.nightMode [data-quizify-theme="gezhi"]',
+  '.night_mode [data-quizify-theme="gezhi"]',
   '.container[data-quizify-theme="gezhi"].quizify-cardless',
   '.container[data-quizify-theme="gezhi"]:not(.quizify-cardless)',
   '.container[data-quizify-theme="gezhi"] .quizify-card-header',
@@ -180,8 +195,8 @@ for (const selector of [
   '.container[data-quizify-theme="gezhi"] .markdown-alert-important',
   '.container[data-quizify-theme="gezhi"] ::selection',
   '.container[data-quizify-theme="gezhi"] .annotation',
-  '.container[data-quizify-theme="gezhi"] .reveal:not(.active)::after',
-  '.container[data-quizify-theme="gezhi"] summary::before',
+  '.container[data-quizify-theme="gezhi"] .reveal-icon',
+  '.container[data-quizify-theme="gezhi"] .quizify-collapse-icon',
   '.container[data-quizify-theme="gezhi"] .quizify-table-scroll > table thead'
 ]) {
   assert(reviewSourceCss.includes(selector), `格致 theme missing scoped selector: ${selector}`);
@@ -192,12 +207,61 @@ assert(
   "格致 cardless theme must retain the compact preview gutter"
 );
 
+const bodyRule = rulesContainingSelector("body").find((rule) =>
+  rule.includes("background-image: none")
+);
+const cardBodyRule = rulesContainingSelector("body.card").find((rule) =>
+  rule.includes("background-image: none")
+);
+const stageBackgroundRule = ruleFor(".quizify-stage::before");
+assert(bodyRule, "body must neutralize reviewer background images");
+assert(cardBodyRule, "Anki body.card must neutralize reviewer background images");
+assert.equal(declarationValue(bodyRule, "background-image"), "none");
+assert.equal(declarationValue(cardBodyRule, "background-image"), "none");
+assert(stageBackgroundRule.includes("position: fixed"));
+assert(stageBackgroundRule.includes("inset: 0"));
+assert(stageBackgroundRule.includes("background-repeat: no-repeat"));
+assert(
+  ruleFor('.quizify-stage[data-quizify-theme="gezhi"]::before')
+    .includes("background: var(--q-bg)"),
+  "格致 must replace the fixed decorative layer with its solid background"
+);
+assert(
+  !reviewSourceCss.includes('.container[data-quizify-theme="gezhi"] blockquote {'),
+  "格致 blockquotes must retain the base four-sided border"
+);
+
+const tooltipRule = ruleFor(".tooltip");
+assert(tooltipRule.includes("display: block"));
+assert(tooltipRule.includes("width: max-content"));
+assert(tooltipRule.includes("overflow-wrap: anywhere"));
+assert(ruleFor(".tooltip-content").includes("overflow: auto"));
+assert(reviewSourceCss.includes('.tooltip[data-placement="bottom"]::after'));
+assert(!reviewSourceCss.includes("var(--tooltip-bg)"));
+
+assert(reviewSourceCss.includes("@media (hover: hover) and (pointer: fine)"));
+assert(reviewSourceCss.includes('.option:has(input:not(:disabled)):hover'));
+assert(reviewSourceCss.includes('.feedback[data-is-answered="false"]:hover'));
+assert(!reviewSourceCss.includes(".choice .feedback:hover {"));
+
+for (const contract of [
+  'class="card card1 fancy isWin iswin"',
+  'background-position-y: -36px',
+  'background-attachment: fixed',
+  'button { outline: none !important; margin: 1em .5em',
+  'body.nightMode, body.night_mode',
+  'class="quizify-stage"'
+]) {
+  assert(reviewerFixture.includes(contract), `reviewer.css fixture missing: ${contract}`);
+}
+
 for (const selector of [
   ".quizify-stage", ".quizify-card-header", "h1::after", "h2::before",
   "blockquote::before", ".markdown-alert", "tbody tr:nth-child(even)", "pre::before",
   ".quizify-table-scroll", ".quizify-table-scroll > table",
   "pre::after", "pre table.hljs-ln", ".hljs-ln-numbers", "--q-code-gutter",
   ".tabs-container", ".fitb input", ".choice", ".annotation", ".reveal",
+  ".reveal-icon", ".quizify-collapse-icon",
   ".tab-button:focus-visible",
   ".quizify-outline", ".quizify-outline-collapse", ".quizify-outline-bullet",
   ".quizify-outline-branch::before", ".quizify-outline-breadcrumbs",
@@ -209,6 +273,27 @@ for (const selector of [
 ]) {
   assert(css.includes(selector), `missing visual selector: ${selector}`);
 }
+
+assert(!reviewSourceCss.includes(".annotation-icon"), "card annotations must remain text-only");
+assert(reviewSourceCss.includes("button[data-quizify-control]"));
+assert(!/(?:^|})\s*\*\s*\{/m.test(reviewSourceCss), "review CSS must not reset every user element");
+assert(!/(?:^|,)\s*button:focus-visible\s*(?:,|\{)/m.test(reviewSourceCss), "review CSS must not style user buttons");
+
+for (const fontIcon of [
+  'content: "“"',
+  'content: "✓"',
+  'content: "!"',
+  'content: "?"',
+  'content: "✦"',
+  'content: "➽"'
+]) {
+  assert(!reviewSourceCss.includes(fontIcon), `review CSS must not use a font icon: ${fontIcon}`);
+}
+assert(reviewSourceCss.includes('--quizify-quote-mask: url("data:image/svg+xml'));
+assert(reviewSourceCss.includes("mask: center / contain no-repeat var(--quizify-quote-mask)"));
+assert(reviewSourceCss.includes('.choice[data-quizify-kind="multiple"] .checkmark'));
+assert(reviewSourceCss.includes('.choice[data-quizify-kind="single"] .option input:checked + .checkmark'));
+assert(reviewSourceCss.includes(".option:focus-within"));
 
 for (const component of [
   "Markdown 排版", "markdown-alert-note", "tabs-container", 'class="fitb"',
@@ -236,10 +321,14 @@ for (const contract of [
   assert(editorCss.includes(contract) || editorJs.includes(contract), `editor workbench missing: ${contract}`);
 }
 for (const contract of [
-  'setProperty("role", "card")', "内置离线运行时", "校验并重新同步媒体",
-  "AnkiDroid 2.24+", "保存并更新模板", "模板主题", "开务", "格致"
+  'setProperty("role", "card")', 'tr("settings.offline_runtime")',
+  'tr("settings.verify_media")', 'tr("settings.ankidroid_api")',
+  'tr("settings.save")', 'tr("settings.template_theme")'
 ]) {
   assert(settings.includes(contract), `settings panel missing: ${contract}`);
+}
+for (const contract of ["settings.theme.kaiwu", "settings.theme.gezhi"]) {
+  assert(configuration.includes(contract), `theme option missing: ${contract}`);
 }
 for (const section of ["Configuration panel", "Editor workbench", "settings-window", "quizify-toolbar-docked", "quizify-inspector-panel", "quizify-live-preview-panel"]) {
   assert(workbench.includes(section), `workbench preview missing: ${section}`);

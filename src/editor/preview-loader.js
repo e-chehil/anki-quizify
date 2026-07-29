@@ -1,4 +1,5 @@
 import { editorBundleUrl } from "./runtime-config.js";
+import { t } from "../shared/i18n.js";
 
 let previewPromise = null;
 
@@ -13,7 +14,7 @@ globalThis.quizifyLoadEditorPreview = () => {
   if (globalThis.quizifyEditorPreviewReady) return Promise.resolve(true);
   if (previewPromise) return previewPromise;
   const source = previewBundleUrl();
-  if (!source) return Promise.reject(new Error("找不到 Quizify 预览资源地址"));
+  if (!source) return Promise.reject(new Error(t("editor.preview_url_missing")));
 
   previewPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
@@ -22,7 +23,7 @@ globalThis.quizifyLoadEditorPreview = () => {
     script.addEventListener("load", () => resolve(true), { once: true });
     script.addEventListener("error", () => {
       previewPromise = null;
-      reject(new Error("Quizify 预览资源加载失败"));
+      reject(new Error(t("editor.preview_load_failed")));
     }, { once: true });
     document.head.appendChild(script);
   });

@@ -10,7 +10,10 @@ import {
   restoreEditorSelection
 } from "./text-commands.js";
 import { decodeAnkiFieldHtml } from "../shared/anki-field.js";
+import { createIconElement } from "../shared/icons.js";
+import { t, tn } from "../shared/i18n.js";
 import {
+  quizifyEditorLocale,
   quizifyNotetypeId,
   quizifyPlainTextIndices
 } from "./runtime-config.js";
@@ -23,9 +26,9 @@ import {
       if (!notice) {
         notice = document.createElement("div");
         notice.className = "quizify-editor-unavailable";
+        notice.setAttribute("lang", quizifyEditorLocale);
         notice.setAttribute("role", "alert");
-        notice.textContent =
-          "Quizify 编辑工具无法连接当前 Anki 编辑器 API。字段仍可编辑，请更新 Quizify 或改用受支持的 Anki 版本。";
+        notice.textContent = t("editor.api_unavailable");
         (document.querySelector(".fields") || document.body).prepend(notice);
       }
       notice.hidden = false;
@@ -50,17 +53,17 @@ import {
   const snippets = syntax.snippets || [];
   const markdownActions = syntax.markdownActions || [];
   const previewLimit = 80;
-  const markdownButtonSymbols = Object.freeze({
-    link: "⛓",
-    "github-alert": "!",
-    blockquote: "❞",
-    "unordered-list": "•≡",
-    "ordered-list": "1≡",
-    "code-block": "{}",
-    image: "▧",
-    table: "▦"
-  });
-  const snippetButtonSymbols = Object.freeze(["填", "选", "揭", "注", "折", "页", "音", "背"]);
+  const markdownButtonIcons = Object.freeze({ heading: "heading-1" });
+  const snippetButtonIcons = Object.freeze([
+    "fitb",
+    "choice",
+    "reveal",
+    "annotation",
+    "collapse",
+    "tabs",
+    "audio",
+    "recite"
+  ]);
   let validationTimer = null;
   let toolbarResizeObserver = null;
   let lastEditor = null;
@@ -135,7 +138,7 @@ import {
   async function noteFields() {
     const noteEditor = instances.find((instance) => instance?.fields) || instances[0];
     const noteFields = (await noteEditor?.fields) || [];
-    fieldNameCache = noteFields.map((field, index) => field?.name || `字段 ${index + 1}`);
+    fieldNameCache = noteFields.map((field) => field?.name || "");
     return noteFields;
   }
 
@@ -222,20 +225,24 @@ import {
     return "";
   }
 
+  function rawFieldName(index) {
+    return domFieldName(index) || fieldNameCache[index] || "";
+  }
+
   function fieldName(index) {
-    const cached = fieldNameCache[index];
-    if (cached && !/^字段\s*\d+$/i.test(cached)) return cached;
-    return domFieldName(index) || cached || `字段 ${index + 1}`;
+    return rawFieldName(index) || t("editor.field_index", { index: index + 1 });
   }
 
   function fieldDisplayName(entry) {
-    if (!entry) return "未选择字段";
-    const name = fieldName(entry.index);
-    return /^字段\s*\d+$/i.test(name) || name.endsWith("字段") ? name : `${name} 字段`;
+    if (!entry) return t("editor.field_none");
+    const name = rawFieldName(entry.index);
+    return name
+      ? t("editor.field_named", { name })
+      : t("editor.field_index", { index: entry.index + 1 });
   }
 
   function isManagedEntry(entry) {
-    return Boolean(entry && managedFieldNames.has(fieldName(entry.index)));
+    return Boolean(entry && managedFieldNames.has(rawFieldName(entry.index)));
   }
 
   function allFieldEditors() {
@@ -395,13 +402,13 @@ import {
     return undefined;
   }
 
-  function insertSnippet(snippet, targetEntry = null) {
+  function insertSnippet(snippet, targetEntry = null, placeholder = null) {
     if (!active()) return false;
     const entry = targetEntry || currentFieldEntry();
     if (!isManagedEntry(entry)) return false;
     const editor = entry?.editor || focusedEditor();
     if (!editor) return false;
-    if (!replaceEditorSelection(editor, snippet, placeholderSelection(snippet))) return false;
+    if (!replaceEditorSelection(editor, snippet, placeholderSelection(snippet, placeholder))) return false;
     rememberEditor(editor, entry?.index ?? lastFieldIndex);
     focusEditor(editor);
     rememberCommandContext(entry);
@@ -430,6 +437,26 @@ import {
 
   function toolbarStatus() {
     return document.querySelector(".quizify-diagnostics-status");
+  }
+
+  function icon(name, className) {
+    const element = createIconElement(document, name, { className });
+    element.setAttribute("aria-hidden", "true");
+    return element;
+  }
+
+  function updateDiagnosticsStatus(status, state, label) {
+    const accessibleLabel = String(label || "");
+    const labelNode = document.createElement("span");
+    labelNode.className = "quizify-visually-hidden";
+    labelNode.textContent = accessibleLabel;
+    status.replaceChildren(
+      icon(`status-${state}`, "quizify-command-icon quizify-status-icon"),
+      labelNode
+    );
+    status.dataset.state = state;
+    status.title = accessibleLabel;
+    status.setAttribute("aria-label", accessibleLabel);
   }
 
   function diagnosticsList() {
@@ -465,8 +492,8 @@ import {
     if (hint) {
       hint.hidden = enabled;
       hint.textContent = active()
-        ? "请先聚焦 Front 或 Back 字段"
-        : "Quizify 编辑工具已停用";
+        ? t("editor.focus_managed_field")
+        : t("editor.deactivated");
     }
   }
 
@@ -494,15 +521,15 @@ import {
     const displayName = fieldDisplayName(entry);
     const toolbar = document.querySelector(".quizify-toolbar");
     if (toolbar) {
-      toolbar.setAttribute("aria-label", `Quizify 编辑工具，当前字段：${displayName}`);
+      toolbar.setAttribute("aria-label", t("editor.toolbar_aria", { field: displayName }));
     }
 
     const previewSummary = document.querySelector(".quizify-command-summary");
     if (previewSummary) {
-      previewSummary.title = `预览 ${displayName} 的交互渲染`;
+      previewSummary.title = t("editor.preview_for_title", { field: displayName });
       previewSummary.setAttribute(
         "aria-label",
-        `打开 ${displayName} 的交互渲染预览`
+        t("editor.preview_for_aria", { field: displayName })
       );
     }
   }
@@ -528,9 +555,7 @@ import {
       (item) => isManagedEntry(item) && (item.editor || item.container)
     );
     if (!managedEntries.length) {
-      status.textContent = "请选择一个字段";
-      status.title = "请选择一个字段";
-      status.dataset.state = "warning";
+      updateDiagnosticsStatus(status, "warning", t("editor.select_field"));
       list.replaceChildren();
       renderPreview([], null);
       return;
@@ -556,22 +581,29 @@ import {
         : [];
     const summary = syntax.summarizeDiagnostics(diagnostics);
 
-    status.textContent = summary;
-    status.title = summary;
-    status.dataset.state = diagnostics.some((item) => item.severity === "error")
+    const state = diagnostics.some((item) => item.severity === "error")
       ? "error"
       : diagnostics.length
         ? "warning"
         : "ok";
+    updateDiagnosticsStatus(status, state, summary);
 
     list.replaceChildren();
     for (const item of diagnostics.slice(0, 8)) {
       const row = document.createElement("li");
       row.dataset.severity = item.severity;
-      row.textContent = `${item.fieldName} 字段 · 第 ${item.line} 行：${item.message}`;
+      row.textContent = t("editor.diagnostic", {
+        field: t("editor.field_named", { name: item.fieldName }),
+        line: item.line,
+        message: item.message
+      });
       row.tabIndex = 0;
       row.setAttribute("role", "button");
-      row.setAttribute("aria-label", `跳转到 ${item.fieldName} 字段第 ${item.line} 行：${item.message}`);
+      row.setAttribute("aria-label", t("editor.diagnostic_jump", {
+        field: t("editor.field_named", { name: item.fieldName }),
+        line: item.line,
+        message: item.message
+      }));
       row.addEventListener("click", () => focusDiagnostic(item.entry, item));
       row.addEventListener("keydown", (event) => {
         if (event.key !== "Enter" && event.key !== " ") return;
@@ -583,7 +615,7 @@ import {
 
     if (diagnostics.length > 8) {
       const row = document.createElement("li");
-      row.textContent = `还有 ${diagnostics.length - 8} 条问题未显示。`;
+      row.textContent = tn("editor.more_diagnostics", diagnostics.length - 8);
       list.appendChild(row);
     }
 
@@ -592,12 +624,20 @@ import {
 
   function describePreview(item) {
     const meta = item.meta || {};
-    if (item.kind === "fitb") return `答案：${meta.answer}`;
-    if (item.kind === "single" || item.kind === "multiple") return `选项：${meta.options}；答案：${meta.answers}`;
-    if (item.kind === "reveal") return `题干：${meta.question}；答案：${meta.answer}`;
-    if (item.kind === "annotation") return `正文：${meta.text}；批注：${meta.note}`;
+    if (item.kind === "fitb") return t("editor.preview_meta.fitb", { answer: meta.answer });
+    if (item.kind === "single" || item.kind === "multiple") {
+      return t("editor.preview_meta.choice", { options: meta.options, answers: meta.answers });
+    }
+    if (item.kind === "reveal") {
+      return t("editor.preview_meta.reveal", { question: meta.question, answer: meta.answer });
+    }
+    if (item.kind === "annotation") {
+      return t("editor.preview_meta.annotation", { text: meta.text, note: meta.note });
+    }
     if (item.kind === "audio") return `${meta.title} -> ${meta.url}`;
-    if (item.kind === "recite") return `遮挡：${meta.mask}%；模式：${meta.mode}`;
+    if (item.kind === "recite") {
+      return t("editor.preview_meta.recite", { mask: meta.mask, mode: meta.mode });
+    }
     if (item.kind === "collapse" || item.kind === "tab") return meta.title;
     return "";
   }
@@ -607,7 +647,11 @@ import {
     if (!list) return;
 
     const count = previewCountLabel();
-    if (count) count.textContent = preview.length ? `${preview.length} 个结构` : "无结构";
+    if (count) {
+      count.textContent = preview.length
+        ? tn("editor.structure_count", preview.length)
+        : t("editor.no_structures");
+    }
     updatePreviewFieldLabel(entry);
     list.replaceChildren();
 
@@ -615,8 +659,8 @@ import {
       const row = document.createElement("li");
       row.className = "quizify-preview-empty";
       row.textContent = entry
-        ? `${fieldDisplayName(entry)}还没有检测到 Quizify 题型。`
-        : "请选择一个字段查看 Quizify 结构。";
+        ? t("editor.no_quizify_structures", { field: fieldDisplayName(entry) })
+        : t("editor.select_field_for_structure");
       list.appendChild(row);
       return;
     }
@@ -631,7 +675,7 @@ import {
       row.appendChild(kind);
 
       const title = document.createElement("strong");
-      title.textContent = `第 ${item.line} 行`;
+      title.textContent = t("editor.line", { line: item.line });
       row.appendChild(title);
 
       const detail = document.createElement("span");
@@ -644,7 +688,7 @@ import {
     if (preview.length > previewLimit) {
       const row = document.createElement("li");
       row.className = "quizify-preview-empty";
-      row.textContent = `还有 ${preview.length - previewLimit} 个结构未显示。`;
+      row.textContent = tn("editor.more_structures", preview.length - previewLimit);
       list.appendChild(row);
     }
   }
@@ -878,7 +922,11 @@ import {
     toolbar.className = "quizify-toolbar";
     toolbar.hidden = false;
     toolbar.setAttribute("role", "toolbar");
-    toolbar.setAttribute("aria-label", "Quizify 编辑工具，当前字段：未选择字段");
+    toolbar.setAttribute("lang", quizifyEditorLocale);
+    toolbar.setAttribute(
+      "aria-label",
+      t("editor.toolbar_aria", { field: t("editor.field_none") })
+    );
     toolbar.setAttribute("aria-orientation", "horizontal");
 
     const inspector = document.createElement("details");
@@ -886,23 +934,21 @@ import {
 
     const status = document.createElement("summary");
     status.className = "quizify-tool-button quizify-diagnostics-status";
-    status.dataset.state = "ok";
-    status.textContent = "语法通过";
-    status.title = "语法通过";
     status.setAttribute("aria-live", "polite");
     status.setAttribute("aria-atomic", "true");
+    updateDiagnosticsStatus(status, "ok", t("syntax.summary.valid"));
     bindPanelSelectionPreservation(status);
     inspector.appendChild(status);
 
     const commands = document.createElement("div");
     commands.className = "quizify-command-bar";
-    commands.setAttribute("aria-label", "Markdown 格式、Quizify 题型、语法检查和渲染预览");
+    commands.setAttribute("aria-label", t("editor.commands_aria"));
 
     const commandHint = document.createElement("span");
     commandHint.className = "quizify-command-hint";
     commandHint.setAttribute("role", "status");
     commandHint.setAttribute("aria-live", "polite");
-    commandHint.textContent = "请先聚焦 Front 或 Back 字段";
+    commandHint.textContent = t("editor.focus_managed_field");
     toolbar.appendChild(commandHint);
 
     function createMarkdownButton(action) {
@@ -917,19 +963,20 @@ import {
       button.setAttribute(
         "aria-label",
         shortcut
-          ? `Markdown：${action.label}，快捷键 ${shortcut}`
-          : `Markdown：${action.label}`
+          ? t("editor.markdown_action_shortcut", { action: action.label, shortcut })
+          : t("editor.markdown_action", { action: action.label })
       );
       if (shortcut) {
         button.setAttribute("aria-keyshortcuts", shortcut.replace("Ctrl", "Control"));
       }
       button.setAttribute("aria-disabled", "true");
 
-      const symbol = document.createElement("span");
-      symbol.className = "quizify-markdown-symbol";
-      symbol.textContent = markdownButtonSymbols[action.id] || action.button;
-      symbol.setAttribute("aria-hidden", "true");
-      button.appendChild(symbol);
+      button.appendChild(
+        icon(
+          markdownButtonIcons[action.id] || action.id,
+          "quizify-command-icon quizify-markdown-icon"
+        )
+      );
 
       bindCommandActivation(button, (entry) => insertMarkdownAction(action, entry));
       return button;
@@ -938,7 +985,7 @@ import {
     markdownActions
       .forEach((action) => commands.appendChild(createMarkdownButton(action)));
 
-    snippets.forEach(([label, snippet], index) => {
+    snippets.forEach(([label, snippet, placeholder], index) => {
       const shortcut = shortcutFor(index);
       const button = document.createElement("button");
       button.type = "button";
@@ -947,22 +994,28 @@ import {
       button.dataset.label = label;
       button.dataset.shortcut = shortcut;
       button.disabled = true;
-      button.setAttribute("aria-label", `${label}，Quizify 题型，快捷键 ${shortcut}`);
+      button.setAttribute(
+        "aria-label",
+        t("editor.snippet_shortcut", { label, shortcut })
+      );
       button.setAttribute("aria-keyshortcuts", shortcutAriaLabel(index));
       button.setAttribute("aria-disabled", "true");
 
-      const symbol = document.createElement("span");
-      symbol.className = "quizify-snippet-symbol";
-      symbol.textContent = snippetButtonSymbols[index] || label.slice(0, 2);
-      symbol.setAttribute("aria-hidden", "true");
-      button.appendChild(symbol);
+      button.appendChild(
+        icon(
+          snippetButtonIcons[index],
+          "quizify-command-icon quizify-snippet-icon"
+        )
+      );
 
       const shortcutText = document.createElement("kbd");
       shortcutText.className = "quizify-shortcut";
       shortcutText.textContent = shortcut;
       button.appendChild(shortcutText);
 
-      bindCommandActivation(button, (entry) => insertSnippet(snippet, entry));
+      bindCommandActivation(button, (entry) =>
+        insertSnippet(snippet, entry, placeholder)
+      );
       commands.appendChild(button);
     });
 
@@ -970,19 +1023,22 @@ import {
     previewMenu.className = "quizify-command-menu quizify-preview-menu";
     const previewSummary = document.createElement("summary");
     previewSummary.className = "quizify-tool-button quizify-command-summary";
-    previewSummary.textContent = "渲染";
-    previewSummary.title = "交互渲染预览";
-    previewSummary.setAttribute("aria-label", "打开当前字段的交互渲染预览");
+    previewSummary.title = t("editor.interactive_preview");
+    previewSummary.setAttribute("aria-label", t("editor.open_current_preview"));
+    previewSummary.appendChild(
+      icon("preview", "quizify-command-icon quizify-preview-icon")
+    );
     bindPanelSelectionPreservation(previewSummary);
     previewMenu.appendChild(previewSummary);
     const livePreviewPanel = document.createElement("div");
     livePreviewPanel.className = "quizify-live-preview-panel";
-    livePreviewPanel.setAttribute("aria-label", "当前字段渲染预览");
+    livePreviewPanel.setAttribute("aria-label", t("editor.current_preview_aria"));
+    livePreviewPanel.dataset.loadingLabel = t("editor.preview_preparing");
     previewMenu.appendChild(livePreviewPanel);
     previewMenu.addEventListener("toggle", () => {
       if (!previewMenu.open) return;
       globalThis.quizifyLoadEditorPreview?.().catch((error) => {
-        livePreviewPanel.textContent = error?.message || "Quizify 预览加载失败";
+        livePreviewPanel.textContent = error?.message || t("editor.preview_load_failed");
       });
     });
     floatingPanelManager.bind(previewMenu, livePreviewPanel, 860);
@@ -1000,7 +1056,7 @@ import {
     previewHeader.className = "quizify-preview-header";
 
     const previewTitle = document.createElement("strong");
-    previewTitle.textContent = "结构预览";
+    previewTitle.textContent = t("editor.structure_preview");
     previewHeader.appendChild(previewTitle);
 
     const previewMeta = document.createElement("span");
@@ -1008,12 +1064,12 @@ import {
 
     const previewField = document.createElement("span");
     previewField.className = "quizify-preview-field";
-    previewField.textContent = "字段 1";
+    previewField.textContent = t("editor.field_index", { index: 1 });
     previewMeta.appendChild(previewField);
 
     const previewCount = document.createElement("span");
     previewCount.className = "quizify-preview-count";
-    previewCount.textContent = "无结构";
+    previewCount.textContent = t("editor.no_structures");
     previewMeta.appendChild(previewCount);
     previewHeader.appendChild(previewMeta);
     preview.appendChild(previewHeader);
@@ -1024,7 +1080,7 @@ import {
 
     const inspectorPanel = document.createElement("div");
     inspectorPanel.className = "quizify-inspector-panel";
-    inspectorPanel.setAttribute("aria-label", "Quizify 语法检查与结构预览");
+    inspectorPanel.setAttribute("aria-label", t("editor.inspector_aria"));
     inspectorPanel.appendChild(diagnostics);
     inspectorPanel.appendChild(preview);
     inspector.appendChild(inspectorPanel);
