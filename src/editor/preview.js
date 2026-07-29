@@ -8,7 +8,8 @@ import {
   disposePreviewInteractions,
   initPreviewInteractions
 } from "./preview-runtime.js";
-import { quizifyReviewTheme } from "./runtime-config.js";
+import { quizifyEditorLocale, quizifyReviewTheme } from "./runtime-config.js";
+import { t } from "../shared/i18n.js";
 
 const PREVIEW_DEBOUNCE_MS = 250;
 const BUNDLED_REVIEW_CSS =
@@ -40,7 +41,8 @@ function darkThemeActive() {
   return [document.documentElement, document.body].some(
     (element) =>
       element?.classList?.contains("nightMode") ||
-      element?.classList?.contains("night-mode")
+      element?.classList?.contains("night-mode") ||
+      element?.classList?.contains("night_mode")
   );
 }
 
@@ -89,18 +91,19 @@ function ensurePreview() {
 
   const preview = document.createElement("section");
   preview.className = "quizify-rendered-preview";
+  preview.setAttribute("lang", quizifyEditorLocale);
 
   const header = document.createElement("header");
   header.className = "quizify-rendered-preview-header";
   const heading = document.createElement("div");
   const title = document.createElement("strong");
-  title.textContent = "交互渲染预览";
+  title.textContent = t("editor.interactive_preview");
   const hint = document.createElement("span");
-  hint.textContent = "可试用题型、折叠、标签页、背诵和音频；预览操作不会保存答案";
+  hint.textContent = t("editor.preview_hint");
   heading.append(title, hint);
   const fieldName = document.createElement("span");
   fieldName.className = "quizify-rendered-preview-field";
-  fieldName.textContent = "未选择字段";
+  fieldName.textContent = t("editor.field_none");
   header.append(heading, fieldName);
   preview.appendChild(header);
 
@@ -114,7 +117,9 @@ function ensurePreview() {
   content.className = "quizify-preview-surface container quizify-cardless";
   const field = document.createElement("section");
   field.className = "quizify-field quizify-side-content";
-  field.textContent = "聚焦 Front 或 Back 字段后，这里会显示渲染结果。";
+  field.textContent = t("editor.preview_focus_hint");
+  field.setAttribute("dir", "auto");
+  field.setAttribute("lang", "");
   content.appendChild(field);
   shadow.appendChild(content);
   preview.appendChild(host);
@@ -154,14 +159,17 @@ function renderPreview(force = false) {
   const dark = syncPreviewTheme(host);
   if (!current) {
     disposePreviewInteractions(field);
-    if (fieldName) fieldName.textContent = "未选择字段";
-    field.textContent = "请先聚焦要预览的字段。";
+    if (fieldName) fieldName.textContent = t("editor.field_none");
+    field.textContent = t("editor.preview_select_field");
     lastRenderKey = null;
     lastRenderTarget = null;
     return;
   }
 
-  if (fieldName) fieldName.textContent = current.name || `字段 ${Number(current.index) + 1}`;
+  if (fieldName) {
+    fieldName.textContent =
+      current.name || t("editor.field_index", { index: Number(current.index) + 1 });
+  }
   const source = String(current.value ?? "");
   const renderKey = `${current.index}:${quizifyReviewTheme}:${dark ? "dark" : "light"}:${source}`;
   if (!force && renderKey === lastRenderKey && field === lastRenderTarget) return;
@@ -170,7 +178,7 @@ function renderPreview(force = false) {
 
   if (utf8Size(source) > MAX_FIELD_BYTES) {
     disposePreviewInteractions(field);
-    field.textContent = "无法预览：当前字段超过 512 KiB 安全上限。";
+    field.textContent = t("editor.preview_too_large");
     return;
   }
   try {
@@ -185,7 +193,9 @@ function renderPreview(force = false) {
     initPreviewInteractions(field);
   } catch (error) {
     disposePreviewInteractions(field);
-    field.textContent = `预览失败：${error?.message || "未知错误"}`;
+    field.textContent = t("editor.preview_failed", {
+      error: error?.message || t("common.unknown_error")
+    });
   }
 }
 

@@ -1,19 +1,9 @@
-import importlib.util
-from pathlib import Path
-import sys
 import unittest
 
+from helpers import load_module
 
-PARSER_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "quizify_addon"
-    / "importer"
-    / "parser.py"
-)
-spec = importlib.util.spec_from_file_location("quizify_import_parser", PARSER_PATH)
-parser = importlib.util.module_from_spec(spec)
-sys.modules[spec.name] = parser
-spec.loader.exec_module(parser)
+
+parser = load_module("importer.parser")
 
 
 def codes(result):

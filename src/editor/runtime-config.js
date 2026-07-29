@@ -1,3 +1,5 @@
+import { getLocale, setLocale } from "../shared/i18n.js";
+
 function scriptUrl(script) {
   try {
     return script?.src ? new URL(script.src, document.baseURI) : null;
@@ -23,6 +25,9 @@ function locateEditorBundle() {
 }
 
 export const editorBundleUrl = locateEditorBundle();
+export const quizifyEditorLocale = setLocale(
+  editorBundleUrl?.searchParams.get("lang") || getLocale()
+);
 export const quizifyNotetypeId = editorBundleUrl?.searchParams.get("ntid") || "";
 export function normalizeReviewTheme(value) {
   return value === "gezhi" || value === "kaiwu" ? value : "kaiwu";

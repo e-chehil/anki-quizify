@@ -1,4 +1,5 @@
 import { nextFence } from "./markdown-structure.js";
+import { t } from "./i18n.js";
 
 export const KATEX_DELIMITERS = Object.freeze(
   [
@@ -1398,7 +1399,7 @@ function unusedPrivateMarker(text) {
   // A JavaScript string cannot contain every two-code-unit PUA pair without
   // already exceeding practical field limits, but fail closed if that invariant
   // ever changes instead of silently substituting the string "undefined".
-  throw new Error("Unable to allocate a private math pipe marker");
+  throw new Error(t("math.marker_unavailable"));
 }
 
 export function protectMathPipes(source) {
@@ -1847,8 +1848,8 @@ export function renderMathPlaceholders(root, katexApi) {
       element.setAttribute(
         "title",
         hasMutatingTexCommand(source)
-          ? "KaTeX: user-defined macros are disabled"
-          : "KaTeX: formula rendering budget exceeded"
+          ? `KaTeX: ${t("math.macros_disabled")}`
+          : `KaTeX: ${t("math.render_budget_exceeded")}`
       );
       return;
     }
@@ -1871,16 +1872,13 @@ export function renderMathPlaceholders(root, katexApi) {
       element.removeAttribute("data-quizify-math-right");
       element.classList.add("quizify-math-rendered");
       rendered++;
-    } catch (error) {
+    } catch {
       element.textContent = `${left}${source}${right}`;
       element.removeAttribute("data-quizify-math");
       element.removeAttribute("data-quizify-math-left");
       element.removeAttribute("data-quizify-math-right");
       element.classList.add("quizify-math-error");
-      element.setAttribute(
-        "title",
-        `KaTeX: ${error?.message || "rendering failed"}`
-      );
+      element.setAttribute("title", `KaTeX: ${t("math.render_failed")}`);
     }
   });
   return rendered;

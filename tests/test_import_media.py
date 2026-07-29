@@ -95,8 +95,8 @@ $$
 
             self.assertTrue(result.has_errors)
             self.assertEqual(len(result.diagnostics), 2)
-            self.assertIn("超出允许目录", result.diagnostics[0].message)
-            self.assertIn("找不到", result.diagnostics[1].message)
+            self.assertIn("outside the allowed directories", result.diagnostics[0].message)
+            self.assertIn("not found", result.diagnostics[1].message)
 
             configured_outside = rewriter.rewrite(
                 "![outside](../outside/secret.png)",
@@ -105,7 +105,7 @@ $$
             )
             self.assertTrue(configured_outside.has_errors)
             self.assertIn(
-                "不得超出 Markdown 所在目录",
+                "within the Markdown document's directory",
                 configured_outside.diagnostics[0].message,
             )
 
@@ -119,7 +119,7 @@ $$
         self.assertTrue(result.has_errors)
         self.assertEqual(len(result.diagnostics), 2)
         self.assertTrue(
-            all("只允许相对路径" in item.message for item in result.diagnostics)
+            all("must be relative paths" in item.message for item in result.diagnostics)
         )
 
     def test_ignores_escaped_and_commented_media_and_strictly_closes_fences(self):

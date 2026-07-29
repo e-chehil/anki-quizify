@@ -4,6 +4,7 @@ import { highlightCodeElement } from "./code.js";
 import { enhanceOutlineLists } from "./outline.js";
 import { enhanceMarkdownTables } from "./tables.js";
 import { renderMathPlaceholders } from "../shared/math.js";
+import { localizeDocument } from "../shared/i18n.js";
 
 const legacy = globalThis.myquizify;
 
@@ -14,6 +15,14 @@ function renderSide(side) {
   } else {
     legacy.renderQuizify("#front");
   }
+}
+
+function applyContentDirection() {
+  document
+    .querySelectorAll(
+      ".quizify-field, .quizify-deck > span:last-child, .quizify-tags"
+    )
+    .forEach((element) => element.setAttribute("dir", "auto"));
 }
 
 function enhanceCode() {
@@ -43,8 +52,10 @@ function destroy() {
 function boot({ side = "front" } = {}) {
   destroy();
   globalThis.isBack = side === "back";
+  localizeDocument(document);
   legacy.configureQuizifyMarked(markedApi);
   renderSide(side);
+  applyContentDirection();
   document.querySelectorAll(".quizify-field").forEach((field) => {
     enhanceOutlineLists(field);
     enhanceMarkdownTables(field);
@@ -57,7 +68,7 @@ function boot({ side = "front" } = {}) {
 }
 
 const api = {
-  version: "1.1.0",
+  version: "1.2.0",
   boot,
   destroy,
   enhanceOutlineLists,

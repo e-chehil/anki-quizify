@@ -16,6 +16,7 @@ EXPECTED_PACKAGE_MEMBERS = {
     "__init__.py",
     "_persistence.js",
     "_quizify.css",
+    "_quizify-i18n.js",
     "_quizify.js",
     "bridge.py",
     "config.json",
@@ -26,15 +27,20 @@ EXPECTED_PACKAGE_MEMBERS = {
     "importer/media.py",
     "importer/parser.py",
     "importer/service.py",
+    "i18n.py",
     "licenses/DOMPurify-Apache-LICENSE.txt",
     "licenses/DOMPurify-MPL-LICENSE.txt",
     "licenses/anki-persistence-LICENSE.txt",
     "licenses/highlight.js-LICENSE.txt",
     "licenses/katex-LICENSE.txt",
+    "licenses/lucide-ISC-LICENSE.txt",
     "licenses/marked-LICENSE.txt",
     "manifest.json",
     "media-manifest.json",
     "media.py",
+    "locales/en.json",
+    "locales/ru.json",
+    "locales/zh-CN.json",
     "notetype.py",
     "package.json",
     "settings.py",
@@ -77,7 +83,7 @@ class PackageTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertEqual(manifest["human_version"], version)
         self.assertEqual(manifest["min_point_version"], 250900)
-        self.assertEqual(manifest["mod"], 2026072701)
+        self.assertEqual(manifest["mod"], 2026073001)
         self.assertEqual(project["version"], version)
         self.assertEqual(lock["version"], version)
         self.assertEqual(lock["packages"][""]["version"], version)

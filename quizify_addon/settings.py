@@ -31,12 +31,13 @@ from .configuration import (
     normalize_review_theme,
 )
 from .media import media_status
+from .i18n import tr, trn
 
 
 class QuizifySettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent or mw)
-        self.setWindowTitle("Quizify Markdown 设置")
+        self.setWindowTitle(tr("settings.window_title"))
         self.setMinimumWidth(620)
         self.setup_ui()
         self.load_config()
@@ -62,7 +63,10 @@ class QuizifySettingsDialog(QDialog):
         layout.addLayout(title_row)
         layout.addWidget(
             self.description(
-                f"开发者：{escape(DEVELOPER_CONTACT)}　·　支持 Anki 25.09+ / AnkiDroid 2.24+"
+                tr(
+                    "settings.developer_support",
+                    developer=escape(DEVELOPER_CONTACT),
+                )
             )
         )
 
@@ -70,19 +74,19 @@ class QuizifySettingsDialog(QDialog):
         options.setProperty("role", "card")
         options_layout = QVBoxLayout(options)
         theme_row = QHBoxLayout()
-        theme_row.addWidget(QLabel("模板主题"))
+        theme_row.addWidget(QLabel(tr("settings.template_theme")))
         theme_row.addStretch()
         self.theme = QComboBox()
-        for identifier, label in REVIEW_THEME_OPTIONS:
-            self.theme.addItem(label, identifier)
+        for identifier, label_key in REVIEW_THEME_OPTIONS:
+            self.theme.addItem(tr(label_key), identifier)
         theme_row.addWidget(self.theme)
         options_layout.addLayout(theme_row)
         options_layout.addWidget(
-            self.description("开务：现代清晰；格致：复古书卷。")
+            self.description(tr("settings.theme.description"))
         )
-        self.cardless = QCheckBox("使用沉浸式无卡片背景")
-        self.floating = QCheckBox("启用悬浮复习控制")
-        self.ankidroid = QCheckBox("启用 AnkiDroid 正式 JavaScript API")
+        self.cardless = QCheckBox(tr("settings.cardless"))
+        self.floating = QCheckBox(tr("settings.floating_control"))
+        self.ankidroid = QCheckBox(tr("settings.ankidroid_api"))
         options_layout.addWidget(self.cardless)
         options_layout.addWidget(self.floating)
         options_layout.addWidget(self.ankidroid)
@@ -91,13 +95,13 @@ class QuizifySettingsDialog(QDialog):
         runtime = QFrame()
         runtime.setProperty("role", "card")
         runtime_layout = QVBoxLayout(runtime)
-        runtime_layout.addWidget(QLabel("内置离线运行时"))
+        runtime_layout.addWidget(QLabel(tr("settings.offline_runtime")))
         self.runtime_status = self.description("")
         self.runtime_status.setTextInteractionFlags(
             self.runtime_status.textInteractionFlags()
         )
         runtime_layout.addWidget(self.runtime_status)
-        resync = QPushButton("校验并重新同步媒体")
+        resync = QPushButton(tr("settings.verify_media"))
         resync.clicked.connect(self.resync)
         runtime_layout.addWidget(resync)
         layout.addWidget(runtime)
@@ -105,10 +109,10 @@ class QuizifySettingsDialog(QDialog):
         layout.addStretch()
         buttons = QHBoxLayout()
         buttons.addStretch()
-        cancel = QPushButton("取消")
+        cancel = QPushButton(tr("common.cancel"))
         cancel.clicked.connect(self.reject)
         buttons.addWidget(cancel)
-        save = QPushButton("保存并更新模板")
+        save = QPushButton(tr("settings.save"))
         save.setDefault(True)
         save.clicked.connect(self.save)
         buttons.addWidget(save)
@@ -142,12 +146,18 @@ class QuizifySettingsDialog(QDialog):
     def update_runtime_status(self) -> None:
         try:
             ready, total, missing = media_status(ADDON_DIR)
-            details = f"已校验 {ready}/{total} 个文件"
+            details = trn(
+                "settings.runtime.status", total, ready=ready, total=total
+            )
             if missing:
-                details += "；缺失或损坏：" + "、".join(missing)
+                details += "\n" + tr(
+                    "settings.runtime.missing", files=", ".join(missing)
+                )
             self.runtime_status.setText(details)
         except Exception as exc:
-            self.runtime_status.setText(f"运行时清单读取失败：{exc}")
+            self.runtime_status.setText(
+                tr("settings.runtime.read_failed", error=exc)
+            )
 
     def resync(self) -> None:
         try:
@@ -156,10 +166,14 @@ class QuizifySettingsDialog(QDialog):
             QMessageBox.information(
                 self,
                 "Quizify Markdown",
-                f"媒体校验完成，已同步 {len(changed)} 个文件。",
+                trn("settings.runtime.sync_complete", len(changed)),
             )
         except Exception as exc:
-            QMessageBox.warning(self, "Quizify Markdown", f"媒体同步失败：{exc}")
+            QMessageBox.warning(
+                self,
+                "Quizify Markdown",
+                tr("settings.runtime.sync_failed", error=exc),
+            )
 
     def save(self) -> None:
         current = get_config()
@@ -186,10 +200,12 @@ class QuizifySettingsDialog(QDialog):
             QMessageBox.warning(
                 self,
                 "Quizify Markdown",
-                f"保存失败，原配置未提交；请修复后重试：{exc}",
+                tr("settings.save_failed", error=exc),
             )
             return
-        QMessageBox.information(self, "Quizify Markdown", "设置和模板已更新。")
+        QMessageBox.information(
+            self, "Quizify Markdown", tr("settings.saved")
+        )
         self.accept()
 
 

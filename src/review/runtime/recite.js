@@ -1,4 +1,5 @@
 import { resolveRuntimeLifecycle } from "../lifecycle.js";
+import { t } from "../../shared/i18n.js";
 
 export const MAX_RECITE_TOKENS = 2000;
 
@@ -48,6 +49,9 @@ export function initRecite({
     const shuffle = block.querySelector(".quizify-recite-shuffle");
     if (!content || !slider || !output || !shuffle) return;
     block.dataset.quizifyInitialized = "true";
+    if (!block.dataset.scrubLabel) {
+      block.dataset.scrubLabel = t("review.recite.scrub_hint");
+    }
 
     const mode = ["auto", "manual", "mixed"].includes(block.dataset.mode)
       ? block.dataset.mode
@@ -115,7 +119,10 @@ export function initRecite({
           span.tabIndex = 0;
           span.setAttribute("role", "button");
           span.dataset.reciteIndex = String(tokenIndex++);
-          span.setAttribute("aria-label", `背诵单元：${part.text}`);
+          span.setAttribute(
+            "aria-label",
+            t("review.recite.unit", { text: part.text })
+          );
           fragment.appendChild(span);
         }
         flushPlainText();

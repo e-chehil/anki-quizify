@@ -30,6 +30,6 @@ assert.equal(javascript.pre.dataset.quizifyLanguage, "JavaScript");
 assert.equal(javascript.attributes.tabindex, "0");
 assert.equal(javascript.attributes["aria-label"], "JavaScript 代码块");
 assert.equal(unknown.pre.dataset.quizifyLanguage, "RUST");
-assert.equal(plain.pre.dataset.quizifyLanguage, "Code");
+assert.equal(plain.pre.dataset.quizifyLanguage, "代码");
 
 console.log("code block presentation tests passed");

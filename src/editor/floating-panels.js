@@ -1,3 +1,5 @@
+import { t } from "../shared/i18n.js";
+
 const TOOLBAR_THEME_VARIABLES = [
   "--qt-surface",
   "--qt-surface-soft",
@@ -171,7 +173,7 @@ export function createFloatingPanelManager(root = globalThis, documentRef = docu
       explicitPanelLabel ||
         anchor?.getAttribute?.("aria-label") ||
         anchor?.textContent ||
-        "Quizify 工具面板"
+        t("editor.tool_panel")
     );
     anchor?.setAttribute?.("aria-controls", panelId);
     anchor?.setAttribute?.("aria-haspopup", "dialog");

@@ -7,6 +7,8 @@ import re
 from typing import Callable, Iterable
 from urllib.parse import quote, unquote, urlsplit
 
+from ..i18n import tr
+
 
 FENCE_RE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})(?:[^`~]*)$")
 MATH_FENCE_RE = re.compile(r"^[ \t]*\$\$[ \t]*$")
@@ -300,10 +302,10 @@ def _local_path(target: str, source_path: Path) -> Path | None:
     if parsed.scheme.lower() in REMOTE_SCHEMES or decoded.startswith("#"):
         return None
     if parsed.scheme or parsed.netloc:
-        raise ValueError(f"不支持的媒体地址：{target}")
+        raise ValueError(tr("import.media.unsupported_address", target=target))
     candidate = Path(parsed.path)
     if candidate.is_absolute():
-        raise ValueError(f"不允许绝对媒体路径：{target}")
+        raise ValueError(tr("import.media.absolute_path", target=target))
     return (source_path.parent / candidate).resolve()
 
 
@@ -345,7 +347,7 @@ class MediaRewriter:
                     MediaDiagnostic(
                         "error",
                         1,
-                        f"媒体 roots 只允许相对路径：{configured}",
+                        tr("import.media.roots_relative", root=configured),
                     )
                 )
                 continue
@@ -356,7 +358,7 @@ class MediaRewriter:
                     MediaDiagnostic(
                         "error",
                         1,
-                        f"无效的媒体 root：{configured}",
+                        tr("import.media.invalid_root", root=configured),
                     )
                 )
                 continue
@@ -365,7 +367,7 @@ class MediaRewriter:
                     MediaDiagnostic(
                         "error",
                         1,
-                        f"媒体 root 不得超出 Markdown 所在目录：{configured}",
+                        tr("import.media.root_outside_document", root=configured),
                     )
                 )
                 continue
@@ -383,7 +385,10 @@ class MediaRewriter:
                         MediaDiagnostic(
                             "error",
                             reference.line,
-                            f"不允许远程{reference.kind}：{reference.target}",
+                            tr(
+                                "import.media.remote_disallowed",
+                                target=reference.target,
+                            ),
                         )
                     )
                 else:
@@ -391,14 +396,30 @@ class MediaRewriter:
                         MediaDiagnostic(
                             "warning",
                             reference.line,
-                            f"远程{reference.kind}保持原地址，离线时可能不可用：{reference.target}",
+                            tr(
+                                "import.media.remote_kept",
+                                target=reference.target,
+                            ),
                         )
                     )
                 continue
             try:
                 path = _local_path(reference.target, source_path)
-            except (OSError, ValueError) as exc:
+            except ValueError as exc:
                 diagnostics.append(MediaDiagnostic("error", reference.line, str(exc)))
+                continue
+            except OSError as exc:
+                diagnostics.append(
+                    MediaDiagnostic(
+                        "error",
+                        reference.line,
+                        tr(
+                            "import.media.path_invalid",
+                            target=reference.target,
+                            error=exc,
+                        ),
+                    )
+                )
                 continue
             if path is None:
                 continue
@@ -407,7 +428,10 @@ class MediaRewriter:
                     MediaDiagnostic(
                         "error",
                         reference.line,
-                        f"媒体路径超出允许目录：{reference.target}",
+                        tr(
+                            "import.media.path_outside_roots",
+                            target=reference.target,
+                        ),
                     )
                 )
                 continue
@@ -416,7 +440,10 @@ class MediaRewriter:
                     MediaDiagnostic(
                         "error" if local_policy != "keep" else "warning",
                         reference.line,
-                        f"找不到本地媒体：{reference.target}",
+                        tr(
+                            "import.media.local_not_found",
+                            target=reference.target,
+                        ),
                     )
                 )
                 continue
@@ -425,7 +452,10 @@ class MediaRewriter:
                     MediaDiagnostic(
                         "error",
                         reference.line,
-                        f"当前配置禁止导入本地媒体：{reference.target}",
+                        tr(
+                            "import.media.local_disallowed",
+                            target=reference.target,
+                        ),
                     )
                 )
                 continue
@@ -434,7 +464,10 @@ class MediaRewriter:
                     MediaDiagnostic(
                         "warning",
                         reference.line,
-                        f"本地路径未复制到 Anki，其他设备可能不可用：{reference.target}",
+                        tr(
+                            "import.media.local_kept",
+                            target=reference.target,
+                        ),
                     )
                 )
                 continue

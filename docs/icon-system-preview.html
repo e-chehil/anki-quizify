@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN" data-quizify-theme="kaiwu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quizify SVG Icon System Preview</title>
+  <style id="anki-host-styles">
+    * { box-sizing: content-box; }
+    body { margin: 20px; overflow-wrap: break-word; background-size: cover; background-repeat: no-repeat; background-position: top; background-attachment: fixed; }
+    body.nightMode, body.night_mode { background-color: #2c2c2c; color: #fcfcfc; }
+    hr { height: 1px; margin: 1em 0; background-color: #737373; border: 0; }
+    img { max-width: 100%; max-height: 95vh; }
+    .isWin button { font-size: 12px; }
+    button { outline: none !important; margin: 1em .5em; padding: 8px 10px; background: #fcfcfc; border: 1px solid #e4e4e4; border-bottom-color: #c4c4c4; border-radius: 5px; box-shadow: none; color: #020202; cursor: pointer; font-weight: 500; -webkit-appearance: none; }
+    button:hover { background: linear-gradient(180deg, #fff 0%, #fcfcfc 100%); border: 1px solid #c4c4c4; }
+    button:active { border-color: #e4e4e4; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35); }
+    button[disabled], button[disabled]:hover { background-color: #fcfcfc; border-bottom-color: #e4e4e4; box-shadow: none !important; color: #858585; }
+    .fancy button:hover { box-shadow: 0 3px 1px -2px rgba(20, 20, 20, 0.2), 0 2px 2px rgba(20, 20, 20, 0.14), 0 1px 5px rgba(20, 20, 20, 0.12); }
+  </style>
+  <link rel="stylesheet" href="../quizify_addon/_quizify.css">
+  <style>
+    .preview-tools { position: fixed; z-index: 500; inset: 12px 12px auto auto; display: flex; gap: 6px; padding: 6px; background: var(--q-surface); border: 1px solid var(--q-border); border-radius: 999px; box-shadow: var(--q-shadow-soft); }
+    .preview-tools button { min-height: 32px; padding: 5px 11px; background: var(--q-surface-soft); border: 1px solid var(--q-border); border-radius: 999px; color: var(--q-text); cursor: pointer; font: 600 12px var(--q-font); }
+  </style>
+</head>
+<body class="card card1 fancy isWin iswin" style="opacity: 1; background-position-y: -36px;">
+  <div class="preview-tools" aria-label="预览工具">
+    <button type="button" id="visual-theme-toggle">切换格致</button>
+    <button type="button" id="night-toggle">切换深色</button>
+  </div>
+
+  <div class="quizify-stage">
+    <article class="container" data-quizify-side="front" dir="auto">
+      <header class="quizify-card-header">
+        <div class="quizify-deck"><span class="quizify-deck-mark" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" class="quizify-brand-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7.5"></circle><path d="m16.3 16.3 4.7 4.7"></path><path d="m7.7 11.2 2.2 2.2 4.5-4.7"></path></svg></span><span>Quizify::SVG System</span></div>
+        <div class="quizify-side-label"><span aria-hidden="true"></span><span data-quizify-i18n="common.question">Question</span></div>
+      </header>
+      <main id="note-container">
+        <section id="front" class="quizify-field quizify-side-content"><!-- quizify-source:start:front --># SVG 图标系统
+
+统一图标应在不同主题、语言和系统字体下保持相同含义。
+
+> 引用装饰也使用矢量轮廓，不再依赖引号字形。
+
+> [!NOTE]
+> Note、Tip、Important、Warning 与 Caution 使用不同的状态图标。
+
+::: 折叠内容
+展开状态使用方向一致的 chevron。
+:::
+
+HTTP 默认端口是 {{80}}。
+
+相邻填空第一行 {{alpha}}<br>
+相邻填空第二行 {{beta}}
+
+TCP 是一种 [面向连接]^(发送数据前需要先建立连接。)^ 的协议；点击 [[三次握手发生在哪一层？||传输层]]。
+
+边缘批注：[窄屏长说明]^(这是用于验证 reviewer.css、窗口边缘以及超长连续文本时气泡尺寸和位置的批注：supercalifragilisticexpialidocious-supercalifragilisticexpialidocious。)^
+
+<button id="user-native-button" type="button">用户正文按钮</button>
+
+;;;
+A. 应用层
+B. 传输层
+C. 网络层
+;;;B
+
+;;;
+A. 可靠传输
+B. 流量控制
+C. 图像压缩
+;;;AB
+
+:::: recite mask=40 mode=mixed
+TCP 通过 %%三次握手%% 建立连接，并提供可靠、有序的字节流服务。
+::::
+
+!audio[Listening sample](preview-audio.mp3)
+<!-- quizify-source:end:front --></section>
+      </main>
+      <footer class="quizify-tags"><span>svg</span><span>accessibility</span><span>i18n</span></footer>
+    </article>
+  </div>
+
+  <script src="../quizify_addon/_quizify-i18n.js"></script>
+  <script type="application/json" id="quizify-config">{"review":{"theme":"kaiwu","floating_control":true}}</script>
+  <script>window.isBack = false;</script>
+  <script src="../quizify_addon/_quizify.js"></script>
+  <script>
+    window.Quizify.boot({ side: "front" });
+    document.getElementById("night-toggle").addEventListener("click", () => document.body.classList.toggle("night_mode"));
+    document.getElementById("visual-theme-toggle").addEventListener("click", (event) => {
+      const next = document.documentElement.dataset.quizifyTheme === "gezhi" ? "kaiwu" : "gezhi";
+      document.documentElement.dataset.quizifyTheme = next;
+      document.body.dataset.quizifyTheme = next;
+      document.querySelector(".quizify-stage").dataset.quizifyTheme = next;
+      document.querySelector(".container").dataset.quizifyTheme = next;
+      event.currentTarget.textContent = next === "gezhi" ? "切换开务" : "切换格致";
+    });
+  </script>
+</body>
+</html>

@@ -100,7 +100,10 @@ class ConfigurationTest(unittest.TestCase):
         self.assertEqual(normalized["review"]["theme"], "gezhi")
         self.assertEqual(
             configuration.REVIEW_THEME_OPTIONS,
-            (("kaiwu", "开务"), ("gezhi", "格致")),
+            (
+                ("kaiwu", "settings.theme.kaiwu"),
+                ("gezhi", "settings.theme.gezhi"),
+            ),
         )
 
     def test_config_transaction_commits_only_after_dependencies_succeed(self):

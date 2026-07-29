@@ -7,8 +7,12 @@ const files = readdirSync("tests")
   .sort();
 
 for (const name of files) {
-  const result = spawnSync(process.execPath, [path.join("tests", name)], {
+  const result = spawnSync(
+    process.execPath,
+    ["--require", path.resolve("tests/legacy-locale.cjs"), path.join("tests", name)],
+    {
     stdio: "inherit"
-  });
+    }
+  );
   if (result.status !== 0) process.exit(result.status || 1);
 }

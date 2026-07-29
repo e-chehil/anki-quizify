@@ -1,3 +1,5 @@
+import { t } from "../shared/i18n.js";
+
 let outlineId = 0;
 
 function directChildLists(item) {
@@ -34,13 +36,14 @@ function interactiveDiv(documentRef, className, action, label, activate) {
 
 function itemLabel(item) {
   const label = item.querySelector?.(".quizify-outline-content")?.textContent || "";
-  return label.replace(/\s+/g, " ").trim().slice(0, 80) || "未命名条目";
+  return label.replace(/\s+/g, " ").trim().slice(0, 80) || t("review.outline.unnamed");
 }
 
 function setExpanded(collapse, bullet, childLists, expanded) {
   collapse.setAttribute("aria-expanded", String(expanded));
-  collapse.setAttribute("aria-label", expanded ? "收起子项" : "展开子项");
-  collapse.title = expanded ? "收起子项" : "展开子项";
+  const label = t(expanded ? "review.outline.collapse" : "review.outline.expand");
+  collapse.setAttribute("aria-label", label);
+  collapse.title = label;
   collapse.classList.toggle("collapsed", !expanded);
   bullet.classList.toggle("collapsed-with-children", !expanded);
   childLists.forEach((list) => {
@@ -125,7 +128,7 @@ function applyZoom(root, breadcrumb, target) {
   breadcrumb.replaceChildren();
   const documentRef = root.ownerDocument;
   breadcrumb.appendChild(
-    makeCrumb(documentRef, "全部条目", () => applyZoom(root, breadcrumb, null))
+    makeCrumb(documentRef, t("review.outline.all"), () => applyZoom(root, breadcrumb, null))
   );
   path.forEach((item, index) => {
     const separator = documentRef.createElement("span");
@@ -159,7 +162,7 @@ function createRow(item, childLists, documentRef) {
     documentRef,
     "quizify-outline-bullet",
     "zoom",
-    "聚焦此条目"
+    t("review.outline.focus")
   );
   bullet.setAttribute("aria-pressed", "false");
   if (!childLists.length) bullet.classList.add("leaf");
@@ -170,7 +173,7 @@ function createRow(item, childLists, documentRef) {
       documentRef,
       "quizify-outline-collapse",
       "toggle",
-      "收起子项",
+      t("review.outline.collapse"),
       () => setExpanded(
         collapse,
         bullet,
@@ -213,7 +216,7 @@ function enhanceList(list, documentRef, isRoot = false) {
 function initializeZoom(root, documentRef) {
   const breadcrumb = documentRef.createElement("nav");
   breadcrumb.className = "quizify-outline-breadcrumbs";
-  breadcrumb.setAttribute("aria-label", "大纲层级");
+  breadcrumb.setAttribute("aria-label", t("review.outline.breadcrumb"));
   breadcrumb.hidden = true;
   root.parentNode?.insertBefore(breadcrumb, root);
 

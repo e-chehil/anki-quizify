@@ -134,9 +134,15 @@ export function readEditorSelection(editor) {
 
 export function placeholderSelection(value, preferred = null) {
   const source = String(value || "");
-  const content =
-    preferred ||
-    /答案|题干|选项 A|内容一|标题|文件名\.mp3|需要背诵的内容/.exec(source)?.[0];
+  const content = preferred || [
+    /\{\{([^{}\n]+)\}\}/,
+    /\[\[([^|\]\n]+)\|\|/,
+    /\[([^\]\n]+)\]\^\(/,
+    /^:::\s+(.+)$/m,
+    /^===\s+(.+)$/m,
+    /!audio\[([^\]]+)\]/,
+    /^::::\s+recite[^\n]*\n([^\n]+)/m
+  ].map((pattern) => pattern.exec(source)?.[1]).find(Boolean);
   if (!content) return null;
   const start = source.indexOf(content);
   return start >= 0 ? { start, end: start + content.length } : null;

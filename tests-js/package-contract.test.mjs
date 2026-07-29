@@ -10,6 +10,7 @@ test("templates are offline-only and use the v1 boot API", async () => {
     const template = await readFile(new URL(`templates/${name}`, root), "utf8");
     assert.doesNotMatch(template, /https?:\/\/|%%[A-Z_]+%%/);
     assert.match(template, /Quizify\.boot/);
+    assert.match(template, /_quizify-i18n\.js/);
     assert.match(template, /_quizify\.js/);
   }
 });
@@ -17,6 +18,7 @@ test("templates are offline-only and use the v1 boot API", async () => {
 test("media manifest matches every bundled runtime asset", async () => {
   const manifest = JSON.parse(await readFile(new URL("media-manifest.json", root), "utf8"));
   assert.equal(manifest.schema_version, 1);
+  assert(manifest.files["_quizify-i18n.js"]);
   assert(manifest.files["_quizify.js"]);
   assert(manifest.files["_quizify.css"]);
   assert(manifest.files["_persistence.js"]);
@@ -53,6 +55,7 @@ test("version and third-party notices are packaged", async () => {
     "highlight.js-LICENSE.txt",
     "DOMPurify-Apache-LICENSE.txt",
     "DOMPurify-MPL-LICENSE.txt",
+    "lucide-ISC-LICENSE.txt",
     "anki-persistence-LICENSE.txt"
   ]) {
     const license = await readFile(new URL(`licenses/${name}`, root), "utf8");
@@ -72,7 +75,9 @@ test("release scripts use stable build roots and verify minified artifacts", asy
 test("editor bundle contains the isolated debounced live preview", async () => {
   const editor = await readFile(new URL("web/editor.js", root), "utf8");
   const preview = await readFile(new URL("web/editor-preview.js", root), "utf8");
-  assert(editor.length < 200_000, `startup editor bundle is too large: ${editor.length}`);
+  // The startup bundle includes the three complete UI catalogs so it can
+  // switch synchronously without a network or file-system round trip.
+  assert(editor.length < 230_000, `startup editor bundle is too large: ${editor.length}`);
   assert.match(editor, /editor-preview\.js/);
   assert.match(preview, /quizify-rendered-preview/);
   assert.match(preview, /attachShadow/);

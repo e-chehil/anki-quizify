@@ -11,6 +11,8 @@ import {
   matchMathDelimiter
 } from "../../shared/math.js";
 import { createParserTools } from "./parsers.js";
+import { t } from "../../shared/i18n.js";
+import { iconSvg } from "../../shared/icons.js";
 
 export function createMarkdownTools(state) {
   function escapeHtml(value) {
@@ -427,22 +429,10 @@ export function createMarkdownTools(state) {
     }
 
     const audioIcons = {
-      replay:
-        '<svg class="audio-icon" viewBox="0 0 24 24" aria-hidden="true">' +
-        '<path d="M7.2 7.2A7 7 0 1 1 5 12h2.2A4.8 4.8 0 1 0 8.6 8.6L11 11H4V4l3.2 3.2z"></path>' +
-        "</svg>",
-      play:
-        '<svg class="audio-icon audio-icon-play" viewBox="0 0 24 24" aria-hidden="true">' +
-        '<path d="M8 5.5v13l10-6.5-10-6.5z"></path>' +
-        "</svg>",
-      pause:
-        '<svg class="audio-icon audio-icon-pause" viewBox="0 0 24 24" aria-hidden="true">' +
-        '<path d="M7 5.5h4v13H7v-13zm6 0h4v13h-4v-13z"></path>' +
-        "</svg>",
-      cancel:
-        '<svg class="audio-icon" viewBox="0 0 24 24" aria-hidden="true">' +
-        '<path d="M7.4 5.9 12 10.6l4.6-4.7 1.5 1.5-4.7 4.6 4.7 4.6-1.5 1.5-4.6-4.7-4.6 4.7-1.5-1.5 4.7-4.6-4.7-4.6 1.5-1.5z"></path>' +
-        "</svg>"
+      replay: iconSvg("rotate-ccw", { className: "audio-icon" }),
+      play: iconSvg("play", { className: "audio-icon audio-icon-play" }),
+      pause: iconSvg("pause", { className: "audio-icon audio-icon-pause" }),
+      cancel: iconSvg("x", { className: "audio-icon" })
     };
 
     const githubAlert = {
@@ -474,11 +464,11 @@ export function createMarkdownTools(state) {
 
         const kind = opener[1].toLowerCase();
         const labels = {
-          note: "Note",
-          tip: "Tip",
-          important: "Important",
-          warning: "Warning",
-          caution: "Caution"
+          note: t("review.alert.note"),
+          tip: t("review.alert.tip"),
+          important: t("review.alert.important"),
+          warning: t("review.alert.warning"),
+          caution: t("review.alert.caution")
         };
         return {
           type: "githubAlert",
@@ -489,9 +479,16 @@ export function createMarkdownTools(state) {
         };
       },
       renderer(token) {
+        const alertIcon = {
+          note: "info",
+          tip: "lightbulb",
+          important: "important",
+          warning: "triangle-alert",
+          caution: "caution"
+        }[token.kind];
         return (
           `<aside class="markdown-alert markdown-alert-${token.kind}">` +
-          `<p class="markdown-alert-title">${token.label}</p>` +
+          `<p class="markdown-alert-title">${iconSvg(alertIcon, { className: "markdown-alert-icon" })}${escapeHtml(token.label)}</p>` +
           `${this.parser.parse(token.tokens)}</aside>`
         );
       }
@@ -511,13 +508,13 @@ export function createMarkdownTools(state) {
       },
       renderer(token) {
         return (
-          `<section class="quizify-recite" data-mask="${token.mask}" data-mode="${escapeAttr(token.mode)}">` +
+          `<section class="quizify-recite" data-mask="${token.mask}" data-mode="${escapeAttr(token.mode)}" data-scrub-label="${escapeAttr(t("review.recite.scrub_hint"))}">` +
           `<div class="quizify-recite-content">${this.parser.parse(token.tokens)}</div>` +
           '<footer class="quizify-recite-toolbar">' +
-          '<label class="quizify-recite-slider"><span>遮挡</span>' +
-          `<input type="range" min="0" max="100" step="5" value="${token.mask}" aria-label="背诵遮挡比例">` +
+          `<label class="quizify-recite-slider"><span>${escapeHtml(t("review.recite.mask"))}</span>` +
+          `<input type="range" min="0" max="100" step="5" value="${token.mask}" aria-label="${escapeAttr(t("review.recite.mask_ratio"))}">` +
           `<output>${token.mask}%</output></label>` +
-          '<button type="button" class="quizify-recite-shuffle" aria-label="重新随机遮挡">↻ 洗牌</button>' +
+          `<button type="button" class="quizify-recite-shuffle" data-quizify-control="recite-shuffle" aria-label="${escapeAttr(t("review.recite.shuffle_label"))}">${iconSvg("shuffle", { className: "quizify-recite-shuffle-icon" })}<span>${escapeHtml(t("review.recite.shuffle"))}</span></button>` +
           '</footer></section>'
         );
       }
@@ -582,7 +579,7 @@ export function createMarkdownTools(state) {
       renderer(token) {
         return (
           "<details>" +
-          `<summary>${this.parser.parseInline(token.titleTokens)}</summary>` +
+          `<summary>${this.parser.parseInline(token.titleTokens)}${iconSvg("chevron-down", { className: "quizify-collapse-icon" })}</summary>` +
           `<div class="collapse-content">${this.parser.parse(token.tokens)}</div>` +
           "</details>"
         );
@@ -627,7 +624,7 @@ export function createMarkdownTools(state) {
           })
           .join("");
 
-        return `<div class="tabs-container"><nav class="tabs-nav" role="tablist" aria-label="内容标签页">${nav}</nav><div class="tabs-content">${panes}</div></div>`;
+        return `<div class="tabs-container"><nav class="tabs-nav" role="tablist" aria-label="${escapeAttr(t("review.tabs"))}">${nav}</nav><div class="tabs-content">${panes}</div></div>`;
       }
     };
 
@@ -662,9 +659,11 @@ export function createMarkdownTools(state) {
         };
       },
       renderer(token) {
+        const tooltipId = nextName("annotation-tooltip");
         return (
-          `<span class="annotation">${this.parser.parseInline(token.textTokens)}` +
-          `<span class="tooltip">${this.parser.parseInline(token.tooltipTokens)}</span></span>`
+          `<span class="annotation" role="button" tabindex="0" aria-expanded="false" aria-controls="${escapeAttr(tooltipId)}" aria-describedby="${escapeAttr(tooltipId)}" aria-label="${escapeAttr(t("review.annotation.show"))}" title="${escapeAttr(t("review.annotation.show"))}">` +
+          `<span class="annotation-label">${this.parser.parseInline(token.textTokens)}</span>` +
+          `<span id="${escapeAttr(tooltipId)}" class="tooltip" role="tooltip" aria-hidden="true"><span class="tooltip-content">${this.parser.parseInline(token.tooltipTokens)}</span></span></span>`
         );
       }
     };
@@ -703,8 +702,8 @@ export function createMarkdownTools(state) {
       renderer(token) {
         return (
           `<span class="fitb" data-answer="${escapeAttr(token.answer)}">` +
-          `<input type="text" name="${escapeAttr(token.inputName)}" data-answer="${escapeAttr(token.answer)}" placeholder="请输入答案">` +
-          '<span class="feedback-icon" role="button" tabindex="0"></span></span>'
+          `<input type="text" name="${escapeAttr(token.inputName)}" data-answer="${escapeAttr(token.answer)}" placeholder="${escapeAttr(t("review.fitb.placeholder"))}">` +
+          `<button type="button" class="feedback-icon" data-quizify-control="fitb-reveal" aria-label="${escapeAttr(t("review.fitb.reveal_answer"))}" title="${escapeAttr(t("review.fitb.reveal_answer"))}">${iconSvg("eye", { className: "fitb-feedback-symbol" })}</button></span>`
         );
       }
     };
@@ -751,9 +750,12 @@ export function createMarkdownTools(state) {
       },
       renderer(token) {
         if (token.literal) return escapeHtml(token.text);
+        const secretId = nextName("reveal-answer");
         return (
-          `<span class="reveal">${this.parser.parseInline(token.questionTokens)}` +
-          `<span class="secret">${this.parser.parseInline(token.answerTokens)}</span></span>`
+          `<span class="reveal" role="button" tabindex="0" aria-expanded="false" aria-controls="${escapeAttr(secretId)}" aria-label="${escapeAttr(t("review.reveal.show"))}" title="${escapeAttr(t("review.reveal.show"))}">` +
+          `<span class="reveal-question">${this.parser.parseInline(token.questionTokens)}</span>` +
+          `${iconSvg("reveal-card", { className: "reveal-icon" })}` +
+          `<span id="${escapeAttr(secretId)}" class="secret" aria-hidden="true">${this.parser.parseInline(token.answerTokens)}</span></span>`
         );
       }
     };
@@ -817,13 +819,15 @@ export function createMarkdownTools(state) {
       },
       renderer(token) {
         const inputType = token.isSingle ? "radio" : "checkbox";
-        const typeLabel = token.isSingle ? "单选题 | " : "多选题 | ";
+        const typeLabel = t(
+          token.isSingle ? "review.choice.single" : "review.choice.multiple"
+        );
         const optionsHtml = token.options
           .map((option) => {
             return (
               `<label class="option" data-option="${escapeAttr(option.letter)}">` +
               `<input type="${inputType}" name="${escapeAttr(token.inputName)}" value="${escapeAttr(option.letter)}">` +
-              '<span class="checkmark"></span>' +
+              `<span class="checkmark" aria-hidden="true">${iconSvg("check", { className: "choice-check-icon" })}</span>` +
               `<span class="option-text">${this.parser.parseInline(option.tokens)}</span></label>`
             );
           })
@@ -832,7 +836,7 @@ export function createMarkdownTools(state) {
         return (
           `<div class="choice" data-correct="${escapeAttr(token.correct)}" data-quizify-kind="${token.isSingle ? "single" : "multiple"}">` +
           `<div class="options">${optionsHtml}</div>` +
-          `<button type="button" class="feedback" data-correct="${escapeAttr(token.correct)}" data-is-answered="false">${typeLabel}点击显示答案</button>` +
+          `<button type="button" class="feedback" data-quizify-control="choice-feedback" data-correct="${escapeAttr(token.correct)}" data-is-answered="false">${escapeHtml(t("review.choice.show_answer", { type: typeLabel }))}</button>` +
           "</div>"
         );
       }
@@ -856,17 +860,17 @@ export function createMarkdownTools(state) {
       },
       renderer(token) {
         return (
-          `<div class="audio-player" data-title="${escapeAttr(token.title)}">` +
+          `<div class="audio-player" data-title="${escapeAttr(token.title)}" data-kind-label="${escapeAttr(t("review.audio.kind"))}">` +
           `<audio preload="metadata"><source src="${escapeAttr(token.url)}" type="audio/mpeg"></audio>` +
           '<div class="time-display"><span class="current-time">0:00</span><span class="duration">0:00</span></div>' +
-          '<div class="progress-container" role="slider" tabindex="0" aria-label="播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-bar"></div></div>' +
+          `<div class="progress-container" role="slider" tabindex="0" aria-label="${escapeAttr(t("review.audio.progress"))}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-bar"></div></div>` +
           '<div class="player-controls">' +
-          `<button type="button" class="replay-btn" title="重新播放" aria-label="重新播放">${audioIcons.replay}</button>` +
-          `<button type="button" class="play-btn" title="播放" aria-label="播放">${audioIcons.play}${audioIcons.pause}</button>` +
-          '<button type="button" class="setA-btn" title="设置 A 点" aria-label="设置 A 点" aria-pressed="false"><span class="audio-letter">A</span></button>' +
-          '<button type="button" class="setB-btn" title="设置 B 点" aria-label="设置 B 点" aria-pressed="false"><span class="audio-letter">B</span></button>' +
-          `<button type="button" class="cancelLoop-btn" title="取消循环" aria-label="取消循环">${audioIcons.cancel}</button>` +
-          '<select class="speed-select" aria-label="播放速度"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select>' +
+          `<button type="button" class="replay-btn" data-quizify-control="audio-replay" title="${escapeAttr(t("review.audio.replay"))}" aria-label="${escapeAttr(t("review.audio.replay"))}">${audioIcons.replay}</button>` +
+          `<button type="button" class="play-btn" data-quizify-control="audio-toggle" title="${escapeAttr(t("review.audio.play"))}" aria-label="${escapeAttr(t("review.audio.play"))}">${audioIcons.play}${audioIcons.pause}</button>` +
+          `<button type="button" class="setA-btn" data-quizify-control="audio-loop-start" title="${escapeAttr(t("review.audio.set_a"))}" aria-label="${escapeAttr(t("review.audio.set_a"))}" aria-pressed="false"><span class="audio-letter">A</span></button>` +
+          `<button type="button" class="setB-btn" data-quizify-control="audio-loop-end" title="${escapeAttr(t("review.audio.set_b"))}" aria-label="${escapeAttr(t("review.audio.set_b"))}" aria-pressed="false"><span class="audio-letter">B</span></button>` +
+          `<button type="button" class="cancelLoop-btn" data-quizify-control="audio-loop-cancel" title="${escapeAttr(t("review.audio.cancel_loop"))}" aria-label="${escapeAttr(t("review.audio.cancel_loop"))}">${audioIcons.cancel}</button>` +
+          `<select class="speed-select" aria-label="${escapeAttr(t("review.audio.speed"))}"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select>` +
           "</div></div>"
         );
       }

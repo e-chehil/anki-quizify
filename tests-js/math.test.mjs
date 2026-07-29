@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import katex from "katex";
 import { JSDOM } from "jsdom";
+import { t } from "../src/shared/i18n.js";
 import {
   KATEX_BLOCK_DELIMITERS,
   KATEX_DELIMITERS,
@@ -602,7 +603,10 @@ test("KaTeX rejects mutable macro definitions before they can amplify output", (
     assert.equal(renderMathPlaceholders(host, katex), 1);
     assert(performance.now() - started < 1000);
     assert(unsafe.classList.contains("quizify-math-error"));
-    assert.match(unsafe.getAttribute("title"), /macros are disabled/);
+    assert.equal(
+      unsafe.getAttribute("title"),
+      `KaTeX: ${t("math.macros_disabled")}`
+    );
     assert.equal(unsafe.textContent, amplified);
     assert.equal(unsafe.querySelectorAll("*").length, 0);
     assert(host.querySelector("#normal .katex"));

@@ -70,3 +70,52 @@ test("editor preview initializes disposable card interactions", async () => {
     "disposing a preview must remove every runtime listener"
   );
 });
+
+test("editor preview constrains annotation tooltips to the preview host", async () => {
+  const dom = new JSDOM(`<!doctype html><body><section id="preview" class="quizify-field">
+    <span class="annotation" role="button" tabindex="0" aria-expanded="false">
+      term<span class="tooltip" role="tooltip" aria-hidden="true">A long annotation</span>
+    </span>
+  </section></body>`, { pretendToBeVisual: true });
+  globalThis.document = dom.window.document;
+  globalThis.window = dom.window;
+
+  const { disposePreviewInteractions, initPreviewInteractions } = await import(
+    `../src/editor/preview-runtime.js?preview-tooltip-test=${Date.now()}`
+  );
+  const preview = document.querySelector("#preview");
+  const annotation = preview.querySelector(".annotation");
+  const tooltip = preview.querySelector(".tooltip");
+  preview.getBoundingClientRect = () => ({
+    left: 400,
+    top: 100,
+    right: 680,
+    bottom: 500,
+    width: 280,
+    height: 400
+  });
+  annotation.getBoundingClientRect = () => ({
+    left: 650,
+    top: 220,
+    right: 674,
+    bottom: 244,
+    width: 24,
+    height: 24
+  });
+  tooltip.getBoundingClientRect = () => ({
+    left: 0,
+    top: 0,
+    right: 220,
+    bottom: 80,
+    width: 220,
+    height: 80
+  });
+
+  initPreviewInteractions(preview);
+  annotation.click();
+  assert.equal(tooltip.style.left, "450px");
+  assert(Number.parseFloat(tooltip.style.left) >= 410);
+  assert(Number.parseFloat(tooltip.style.left) + 220 <= 670);
+
+  disposePreviewInteractions(preview);
+});

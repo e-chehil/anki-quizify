@@ -36,4 +36,8 @@ test("editor preview mirrors the configured review theme on both shadow boundari
   assert.equal(syncPreviewTheme(host), false);
   assert.equal(host.dataset.theme, "light");
   assert.equal(host.dataset.quizifyTheme, "gezhi");
+
+  document.body.classList.add("night_mode");
+  assert.equal(syncPreviewTheme(host), true);
+  assert.equal(host.dataset.theme, "dark");
 });

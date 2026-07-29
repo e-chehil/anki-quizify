@@ -284,10 +284,24 @@ export function createParserTools(state) {
   const reciteStopWordsCn = new Set(
     "的了和是就都而及与着或之在把被给让向从于地得吗呢吧啊呀".split("")
   );
+  const reciteStopWordsRu = new Set([
+    "а", "без", "бы", "был", "была", "были", "было", "быть", "в", "вам",
+    "вас", "ваш", "ваша", "ваше", "ваши", "во", "вы", "для", "до", "его",
+    "ее", "её", "ей", "ему", "если", "есть", "же", "за", "и", "из", "или",
+    "им", "их", "к", "как", "ко", "ли", "меня", "мне", "мой", "моя", "мое",
+    "моё", "мои", "мы", "на", "не", "него", "нее", "неё", "ней", "нем", "нём",
+    "нет", "ни", "но", "о", "об", "он", "она", "они", "оно", "от", "по", "под",
+    "при", "с", "себя", "со", "та", "те", "то", "тот", "ты", "у", "что", "эта",
+    "эти", "это", "этот", "я"
+  ]);
 
   function tokenizeAutomaticReciteText(text) {
     const source = String(text || "");
-    const pattern = /(?:[$¥€£])?\d+(?:[.,]\d+)*(?:%|kg|km|cm|mm|g|lb|oz|k|m|bn)?|[A-Za-z]+(?:['’/\-][A-Za-z]+)*|[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/gi;
+    // Keep Han characters individually maskable, while treating words in
+    // Cyrillic, accented Latin and other alphabetic scripts as whole units.
+    // Unicode property escapes are part of ES2018; the explicit number branch
+    // also covers non-ASCII decimal digits used by common writing systems.
+    const pattern = /(?:[$¥€£₽₹₩])?\p{N}+(?:[.,\u066b\u066c]\p{N}+)*(?:%|kg|km|cm|mm|g|lb|oz|k|m|bn)?|\p{Script=Han}|[\p{L}\p{M}]+(?:['’/\-\u2010\u2011][\p{L}\p{M}]+)*/gu;
     const tokens = [];
     let offset = 0;
     let match;
@@ -297,12 +311,15 @@ export function createParserTools(state) {
       }
       const value = match[0];
       const isEnglish = /^[A-Za-z]/.test(value);
-      const isChinese = /^[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]$/.test(value);
+      const isChinese = /^\p{Script=Han}$/u.test(value);
+      const isCyrillic = /^\p{Script=Cyrillic}/u.test(value);
       const hideable = isEnglish
         ? !reciteStopWordsEn.has(value.toLowerCase())
         : isChinese
           ? !reciteStopWordsCn.has(value)
-          : true;
+          : isCyrillic
+            ? !reciteStopWordsRu.has(value.toLowerCase())
+            : true;
       tokens.push({ text: value, hideable, manual: false });
       offset = pattern.lastIndex;
     }

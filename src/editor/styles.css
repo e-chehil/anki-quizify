@@ -111,7 +111,10 @@
 
 .nightMode .quizify-rendered-preview-host,
 .night-mode .quizify-rendered-preview-host,
-body.nightMode .quizify-rendered-preview-host {
+.night_mode .quizify-rendered-preview-host,
+body.nightMode .quizify-rendered-preview-host,
+body.night-mode .quizify-rendered-preview-host,
+body.night_mode .quizify-rendered-preview-host {
   background: #101614;
 }
 
@@ -136,7 +139,10 @@ body.nightMode .quizify-rendered-preview-host {
 
 .nightMode .quizify-toolbar,
 .night-mode .quizify-toolbar,
-body.nightMode .quizify-toolbar {
+.night_mode .quizify-toolbar,
+body.nightMode .quizify-toolbar,
+body.night-mode .quizify-toolbar,
+body.night_mode .quizify-toolbar {
   --qt-surface: #18201e;
   --qt-surface-soft: #1e2926;
   --qt-surface-raised: #232e2b;
@@ -196,17 +202,17 @@ body.nightMode .quizify-toolbar {
   background: var(--qt-surface-raised);
   border: 1px solid var(--qt-border);
   border-radius: 5px;
-  block-size: 28px;
+  block-size: 32px;
   box-shadow: none;
   color: var(--qt-text);
   cursor: pointer;
   display: inline-flex;
-  flex: 0 0 30px;
+  flex: 0 0 32px;
   font: inherit;
-  inline-size: 30px;
+  inline-size: 32px;
   justify-content: center;
-  min-block-size: 28px;
-  min-inline-size: 30px;
+  min-block-size: 32px;
+  min-inline-size: 32px;
   padding: 0;
   transition:
     background 140ms ease,
@@ -233,29 +239,24 @@ body.nightMode .quizify-toolbar {
   transform: none;
 }
 
-.quizify-markdown-symbol {
-  font-size: 10px;
-  font-weight: 760;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.quizify-markdown-button[data-action="italic"] .quizify-markdown-symbol {
-  font-style: italic;
-}
-
-.quizify-markdown-button[data-action="strikethrough"] .quizify-markdown-symbol {
-  text-decoration: line-through;
+.quizify-command-icon {
+  block-size: 17px;
+  color: currentColor;
+  display: block;
+  flex: 0 0 17px;
+  inline-size: 17px;
+  pointer-events: none;
+  stroke: currentColor;
 }
 
 .quizify-inspector,
 .quizify-command-menu {
-  block-size: 28px;
-  flex: 0 0 30px;
-  inline-size: 30px;
+  block-size: 32px;
+  flex: 0 0 32px;
+  inline-size: 32px;
   margin: 0;
-  min-block-size: 28px;
-  min-inline-size: 30px;
+  min-block-size: 32px;
+  min-inline-size: 32px;
   position: static;
 }
 
@@ -274,22 +275,12 @@ body.nightMode .quizify-toolbar {
 }
 
 .quizify-command-summary {
-  font-size: 0;
-  font-weight: 700;
   line-height: 1;
   user-select: none;
 }
 
-.quizify-command-summary::before {
-  color: var(--qt-primary);
-  font-size: 13px;
-  font-weight: 820;
-}
-
-.quizify-preview-menu > .quizify-command-summary::before {
-  content: "◉";
+.quizify-preview-icon {
   color: currentColor;
-  font-size: 10px;
 }
 
 .quizify-preview-menu > .quizify-command-summary {
@@ -335,17 +326,13 @@ body.nightMode .quizify-toolbar {
 }
 
 .quizify-live-preview-panel:empty::before {
-  content: "正在准备预览…";
+  content: attr(data-loading-label);
   color: var(--qt-muted);
   font-size: 12px;
 }
 
-.quizify-snippet-symbol {
+.quizify-snippet-icon {
   color: var(--qt-primary-strong);
-  font-size: 12px;
-  font-weight: 760;
-  line-height: 1;
-  white-space: nowrap;
 }
 
 .quizify-shortcut {
@@ -363,22 +350,21 @@ body.nightMode .quizify-toolbar {
 
 .quizify-diagnostics-status {
   border: 1px solid transparent;
-  font-size: 0;
-  font-weight: 700;
   line-height: 1;
   overflow: hidden;
   white-space: nowrap;
 }
 
-.quizify-diagnostics-status::before {
-  align-items: center;
-  content: "✓";
-  display: inline-flex;
-  flex: 0 0 auto;
-  font-size: 11px;
-  font-weight: 900;
-  justify-content: center;
-  line-height: 1;
+.quizify-visually-hidden {
+  block-size: 1px;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  inline-size: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
 }
 
 .quizify-inspector[open] > .quizify-diagnostics-status {
@@ -397,18 +383,10 @@ body.nightMode .quizify-toolbar {
   color: #854d0e;
 }
 
-.quizify-diagnostics-status[data-state="warning"]::before {
-  content: "!";
-}
-
 .quizify-diagnostics-status[data-state="error"] {
   background: #fff0ee;
   border-color: rgba(180, 35, 24, 0.2);
   color: #991b1b;
-}
-
-.quizify-diagnostics-status[data-state="error"]::before {
-  content: "×";
 }
 
 .quizify-inspector-panel {
