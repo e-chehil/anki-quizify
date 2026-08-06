@@ -19,7 +19,12 @@ const SANITIZE_OPTIONS = Object.freeze({
     "playsinline",
     "preload",
     "poster"
-  ]
+  ],
+  // DOMPurify 3.4.12's default URI allowlist, extended only for Obsidian
+  // vault backlinks. Relative paths and hash links remain covered by the
+  // default fallback branches below.
+  ALLOWED_URI_REGEXP:
+    /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|obsidian):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
 });
 
 export function utf8Size(value) {

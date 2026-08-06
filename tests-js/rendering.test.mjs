@@ -80,6 +80,32 @@ test("real Marked renders Quizify syntax and sanitizes dangerous HTML", () => {
   assert.doesNotMatch(html, /onerror|<script|javascript:|style=/i);
 });
 
+test("built card runtime retains Obsidian backlinks without relaxing URI sanitization", () => {
+  const dom = runtime();
+  const html = dom.window.Quizify.renderMarkdown(
+    [
+      "[📖 Obsidian](obsidian://open?vault=V&file=N)",
+      "[web](https://example.test/path)",
+      "[mail](mailto:quizify@example.test)",
+      "[relative](notes/card.md)",
+      "[hash](#section)",
+      "[unknown](evil:payload)",
+      "<a href='javascript:alert(1)' onmouseover='alert(2)' style='color:red'>unsafe</a>"
+    ].join("\n\n")
+  );
+  const links = JSDOM.fragment(html).querySelectorAll("a");
+
+  assert.equal(links[0].getAttribute("href"), "obsidian://open?vault=V&file=N");
+  assert.equal(links[1].getAttribute("href"), "https://example.test/path");
+  assert.equal(links[2].getAttribute("href"), "mailto:quizify@example.test");
+  assert.equal(links[3].getAttribute("href"), "notes/card.md");
+  assert.equal(links[4].getAttribute("href"), "#section");
+  assert.equal(links[5].getAttribute("href"), null);
+  assert.equal(links[6].getAttribute("href"), null);
+  assert.equal(links[6].getAttribute("onmouseover"), null);
+  assert.equal(links[6].getAttribute("style"), null);
+});
+
 test("audio controls retain safe SVG icons after sanitization", () => {
   const dom = runtime();
   const html = dom.window.Quizify.renderMarkdown(
