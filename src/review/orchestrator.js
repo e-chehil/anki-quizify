@@ -155,8 +155,21 @@ import { t } from "../shared/i18n.js";
     if (!root.document) return config;
 
     const theme = normalizeReviewTheme(config?.review?.theme);
-    root.document.documentElement?.setAttribute("data-quizify-theme", theme);
-    root.document.body?.setAttribute?.("data-quizify-theme", theme);
+    const documentRoot = root.document.documentElement;
+    const documentBody = root.document.body;
+    const nightClasses = [
+      "nightMode",
+      "night-mode",
+      "night_mode",
+      "ankidroid_dark_mode"
+    ];
+    const night = [documentRoot, documentBody].some((element) =>
+      nightClasses.some((className) => element?.classList?.contains(className))
+    );
+    documentRoot?.setAttribute("data-quizify-theme", theme);
+    documentRoot?.setAttribute("data-quizify-night", String(night));
+    documentBody?.setAttribute?.("data-quizify-theme", theme);
+    documentBody?.setAttribute?.("data-quizify-night", String(night));
     root.document.querySelectorAll(".quizify-stage").forEach((stage) => {
       stage.setAttribute?.("data-quizify-theme", theme);
     });
@@ -392,9 +405,9 @@ import { t } from "../shared/i18n.js";
     state.revealControllers = [];
   }
 
-  function initAllQuizFeatures() {
+  function initAllQuizFeatures(preparedConfig = null) {
     destroyQuizify();
-    const config = applyConfig();
+    const config = preparedConfig || applyConfig();
     initCodeBlocks();
 
     root.quizifyPlatform = createPlatform(config, root);

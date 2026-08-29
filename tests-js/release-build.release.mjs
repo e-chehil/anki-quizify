@@ -81,9 +81,9 @@ test("release bundles are minified and stay within size budgets", async () => {
     // Complete Chinese, English and Russian catalogs shared by every runtime.
     "_quizify-i18n.js": 150_000,
     "_quizify.js": 700_000,
-    // Includes both skins, bidirectional layout, embedded vector decorations,
-    // and scoped resets that isolate owned controls from Anki WebView styles.
-    "_quizify.css": 86_000,
+    // Includes both skins, bidirectional layout, the viewport/Android
+    // first-paint canvases and scoped resets for Anki WebView styles.
+    "_quizify.css": 88_000,
     "web/editor.js": 50_000,
     "web/editor-preview.js": 750_000,
     // Includes the shared ownership-aware math scanner used by diagnostics.

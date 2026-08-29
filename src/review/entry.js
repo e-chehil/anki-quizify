@@ -6,6 +6,9 @@ import { enhanceMarkdownTables } from "./tables.js";
 import { renderMathPlaceholders } from "../shared/math.js";
 import { localizeDocument } from "../shared/i18n.js";
 
+// Mobile/preview clients can evaluate the bundle for every card side. Clean
+// up the previous instance before the new module graph replaces its globals.
+globalThis.Quizify?.destroy?.();
 const legacy = globalThis.myquizify;
 
 function renderSide(side) {
@@ -50,25 +53,30 @@ function destroy() {
 }
 
 function boot({ side = "front" } = {}) {
-  destroy();
-  globalThis.isBack = side === "back";
-  localizeDocument(document);
-  legacy.configureQuizifyMarked(markedApi);
-  renderSide(side);
-  applyContentDirection();
-  document.querySelectorAll(".quizify-field").forEach((field) => {
-    enhanceOutlineLists(field);
-    enhanceMarkdownTables(field);
-  });
-  enhanceCode();
-  enhanceMath();
-  legacy.initAllQuizFeatures();
-  api.platform = globalThis.quizifyPlatform;
-  return api;
+  try {
+    destroy();
+    globalThis.isBack = side === "back";
+    localizeDocument(document);
+    legacy.configureQuizifyMarked(markedApi);
+    const config = legacy._internal.applyConfig();
+    renderSide(side);
+    applyContentDirection();
+    document.querySelectorAll(".quizify-field").forEach((field) => {
+      enhanceOutlineLists(field);
+      enhanceMarkdownTables(field);
+    });
+    enhanceCode();
+    enhanceMath();
+    legacy.initAllQuizFeatures(config);
+    api.platform = globalThis.quizifyPlatform;
+    return api;
+  } finally {
+    globalThis.__quizifyFirstPaint?.reveal?.();
+  }
 }
 
 const api = {
-  version: "1.2.0",
+  version: "1.2.2",
   boot,
   destroy,
   enhanceOutlineLists,

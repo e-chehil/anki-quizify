@@ -4,10 +4,10 @@ import { createFloatingPanelManager } from "./floating-panels.js";
 import {
   captureEditorSelection,
   markdownSelection,
-  placeholderSelection,
   readEditorSelection,
   replaceEditorSelection,
-  restoreEditorSelection
+  restoreEditorSelection,
+  snippetInsertion
 } from "./text-commands.js";
 import { decodeAnkiFieldHtml } from "../shared/anki-field.js";
 import { createIconElement } from "../shared/icons.js";
@@ -408,7 +408,13 @@ import {
     if (!isManagedEntry(entry)) return false;
     const editor = entry?.editor || focusedEditor();
     if (!editor) return false;
-    if (!replaceEditorSelection(editor, snippet, placeholderSelection(snippet, placeholder))) return false;
+    const insertion = snippetInsertion(
+      snippet,
+      placeholder,
+      readEditorSelection(editor)
+    );
+    if (!insertion) return false;
+    if (!replaceEditorSelection(editor, insertion.value, insertion.selection)) return false;
     rememberEditor(editor, entry?.index ?? lastFieldIndex);
     focusEditor(editor);
     rememberCommandContext(entry);
@@ -813,7 +819,7 @@ import {
 
     const index = shortcutIndexForEvent(event);
     if (index < 0) return;
-    if (!insertSnippet(snippets[index][1], targetEntry)) return;
+    if (!insertSnippet(snippets[index][1], targetEntry, snippets[index][2])) return;
     event.preventDefault?.();
     event.stopPropagation?.();
   }

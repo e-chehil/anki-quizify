@@ -134,7 +134,10 @@ export function readEditorSelection(editor) {
 
 export function placeholderSelection(value, preferred = null) {
   const source = String(value || "");
-  const content = preferred || [
+  const preferredContent = String(preferred || "");
+  const content = (preferredContent && source.includes(preferredContent)
+    ? preferredContent
+    : null) || [
     /\{\{([^{}\n]+)\}\}/,
     /\[\[([^|\]\n]+)\|\|/,
     /\[([^\]\n]+)\]\^\(/,
@@ -146,6 +149,29 @@ export function placeholderSelection(value, preferred = null) {
   if (!content) return null;
   const start = source.indexOf(content);
   return start >= 0 ? { start, end: start + content.length } : null;
+}
+
+export function snippetInsertion(snippet, placeholder = null, selection = "") {
+  const template = String(snippet || "");
+  const selected = String(selection ?? "");
+  const target = placeholderSelection(template, placeholder);
+
+  if (!selected) {
+    return { value: template, selection: target };
+  }
+
+  // A selected authoring fragment must never be discarded. Every production
+  // snippet exposes its primary editable slot as `placeholder`; returning null
+  // makes a malformed/custom snippet a safe no-op instead of replacing text.
+  if (!target) return null;
+
+  return {
+    value: `${template.slice(0, target.start)}${selected}${template.slice(target.end)}`,
+    selection: {
+      start: target.start,
+      end: target.start + selected.length
+    }
+  };
 }
 
 export function markdownSelection(action, selection, value) {

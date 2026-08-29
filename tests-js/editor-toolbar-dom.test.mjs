@@ -308,7 +308,23 @@ test("real DOM toolbar keeps native fields visible and scopes plain text and sho
     cancelable: true
   }));
   snippet.click();
-  assert.equal(front.value, "Front**粗体**~~保留选区~~{{答案}}");
+  assert.equal(front.value, "Front**粗体**~~保留选区~~{{保留选区}}");
+
+  front.selection = "快捷键选区";
+  const snippetShortcut = new dom.window.KeyboardEvent("keydown", {
+    key: "1",
+    code: "Digit1",
+    ctrlKey: true,
+    altKey: true,
+    bubbles: true,
+    cancelable: true
+  });
+  document.querySelector("#front-input").dispatchEvent(snippetShortcut);
+  assert.equal(snippetShortcut.defaultPrevented, true);
+  assert.equal(
+    front.value,
+    "Front**粗体**~~保留选区~~{{保留选区}}{{快捷键选区}}"
+  );
 
   const diagnosticsSummary = directInspector.querySelector("summary");
   front.focused = false;

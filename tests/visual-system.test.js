@@ -56,7 +56,7 @@ assert.equal(backBrand, frontBrand, "front and back must use identical SVG brand
 assert(back.includes('data-quizify-side="back"'));
 assert(back.includes('id="answer" role="separator"'));
 
-for (const token of ["--q-bg-deep", "--q-primary-glow", "--q-control-primary", "--q-accent", "--q-shadow-lift"]) {
+for (const token of ["--q-bg-deep", "--q-primary-glow", "--q-control-primary", "--q-accent", "--q-accent-glow", "--q-shadow-lift"]) {
   assert(css.includes(token), `missing design token: ${token}`);
 }
 
@@ -213,18 +213,47 @@ const bodyRule = rulesContainingSelector("body").find((rule) =>
 const cardBodyRule = rulesContainingSelector("body.card").find((rule) =>
   rule.includes("background-image: none")
 );
-const stageBackgroundRule = ruleFor(".quizify-stage::before");
+const stageBackgroundRule = rulesContainingSelector(".quizify-stage::before").find((rule) =>
+  rule.includes("position: fixed")
+);
+const kaiwuBodyBackgroundRule = rulesContainingSelector('body[data-quizify-theme="kaiwu"]')
+  .find((rule) => rule.includes("color-mix("));
+const gezhiBodyBackgroundRule = rulesContainingSelector('body[data-quizify-theme="gezhi"]')
+  .find((rule) => rule.includes("background: var(--q-bg)"));
 assert(bodyRule, "body must neutralize reviewer background images");
 assert(cardBodyRule, "Anki body.card must neutralize reviewer background images");
 assert.equal(declarationValue(bodyRule, "background-image"), "none");
 assert.equal(declarationValue(cardBodyRule, "background-image"), "none");
-assert(stageBackgroundRule.includes("position: fixed"));
+assert(kaiwuBodyBackgroundRule, "开务 must paint the native reviewer body canvas");
+assert.equal((kaiwuBodyBackgroundRule.match(/background\s*:/g) || []).length, 2);
+assert.equal((kaiwuBodyBackgroundRule.match(/!important/g) || []).length, 6);
+assert(kaiwuBodyBackgroundRule.includes("var(--q-accent-glow)"));
+assert(kaiwuBodyBackgroundRule.includes("color-mix("));
+assert.equal(declarationValue(kaiwuBodyBackgroundRule, "background-attachment"), "fixed !important");
+assert.equal(declarationValue(kaiwuBodyBackgroundRule, "background-position"), "top !important");
+assert.equal(declarationValue(kaiwuBodyBackgroundRule, "background-repeat"), "no-repeat !important");
+assert.equal(declarationValue(kaiwuBodyBackgroundRule, "background-size"), "cover !important");
+assert(
+  kaiwuBodyBackgroundRule.indexOf("var(--q-accent-glow)") <
+    kaiwuBodyBackgroundRule.indexOf("color-mix(in srgb"),
+  "the Android-safe background must precede the enhanced color-mix declaration"
+);
+assert(gezhiBodyBackgroundRule, "格致 must paint the reviewer body with its solid background");
+assert(stageBackgroundRule, "bodyless previews must retain a fixed canvas fallback");
 assert(stageBackgroundRule.includes("inset: 0"));
 assert(stageBackgroundRule.includes("background-repeat: no-repeat"));
+assert(stageBackgroundRule.includes("var(--q-accent-glow)"));
+assert(!stageBackgroundRule.includes("color-mix("));
+assert(!reviewSourceCss.includes("body::before"), "the reviewer must not retain an obscured body pseudo-element canvas");
+assert.equal(
+  declarationValue(ruleFor("body .quizify-stage::before"), "content"),
+  "none",
+  "the reviewer must not retain a stage-scoped duplicate background"
+);
 assert(
-  ruleFor('.quizify-stage[data-quizify-theme="gezhi"]::before')
-    .includes("background: var(--q-bg)"),
-  "格致 must replace the fixed decorative layer with its solid background"
+  rulesContainingSelector('.quizify-stage[data-quizify-theme="gezhi"]::before')
+    .some((rule) => rule.includes("background: var(--q-bg)")),
+  "格致 must replace the bodyless stage fallback with its solid background"
 );
 assert(
   !reviewSourceCss.includes('.container[data-quizify-theme="gezhi"] blockquote {'),

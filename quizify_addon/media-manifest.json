@@ -90,12 +90,12 @@
       "sha256": "71d517d67827787cfabdf186914cc3358eda539e37931941f2b2fd4a21f68c0b"
     },
     "_quizify.css": {
-      "bytes": 85587,
-      "sha256": "502314cbd46dae096de36e3aa115f89b6b1f904ceb57324a0ca84dfc25897574"
+      "bytes": 86845,
+      "sha256": "c26996a4062428cdffa47a8aea85a868f04cd42bc4fcd7b619704863e42220fa"
     },
     "_quizify.js": {
-      "bytes": 621313,
-      "sha256": "ac6fd64c0fc77ad4a5d499e9320206d7f68037be20064e7234c9ea1ed395343c"
+      "bytes": 621854,
+      "sha256": "eab44312ced605245e939e4dcf4c7114ee188d5c4c9a7fcf8508401e4d916af1"
     }
   }
 }
