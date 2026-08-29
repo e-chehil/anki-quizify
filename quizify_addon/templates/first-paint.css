@@ -1,0 +1,23 @@
+:root[data-quizify-active="true"][data-quizify-theme="kaiwu"][data-quizify-night="false"] {
+  background-color: #f2f0e9;
+  color-scheme: light;
+}
+
+:root[data-quizify-active="true"][data-quizify-theme="kaiwu"][data-quizify-night="true"] {
+  background-color: #101614;
+  color-scheme: dark;
+}
+
+:root[data-quizify-active="true"][data-quizify-theme="gezhi"][data-quizify-night="false"] {
+  background-color: #e4dfd7;
+  color-scheme: light;
+}
+
+:root[data-quizify-active="true"][data-quizify-theme="gezhi"][data-quizify-night="true"] {
+  background-color: #22202e;
+  color-scheme: dark;
+}
+
+.quizify-stage[data-quizify-first-paint="pending"] {
+  visibility: hidden !important;
+}

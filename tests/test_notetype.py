@@ -66,6 +66,14 @@ class NoteTypeTest(unittest.TestCase):
             '{{Front}}\n{{Back}}\n<script>Quizify.boot({side:"back"})</script>',
             encoding="utf-8",
         )
+        (self.addon / "templates" / "first-paint.js").write_text(
+            "globalThis.__quizifyFirstPaint = { reveal: function () {} };",
+            encoding="utf-8",
+        )
+        (self.addon / "templates" / "first-paint.css").write_text(
+            '[data-quizify-first-paint="pending"] { visibility: hidden; }',
+            encoding="utf-8",
+        )
 
     def tearDown(self):
         self.temporary.cleanup()
@@ -161,6 +169,25 @@ class NoteTypeTest(unittest.TestCase):
         self.assertTrue(updated.endswith(".card { color: rebeccapurple; }"))
         self.assertEqual(updated.count(notetype.MANAGED_CSS_START), 1)
         self.assertEqual(notetype._css_with_managed_block(updated), updated)
+
+    def test_embeds_first_paint_prelude_before_runtime_assets(self):
+        rendered = notetype.template_html(self.addon, "front.html", config())
+
+        config_index = rendered.index('id="quizify-config"')
+        bootstrap_index = rendered.index("data-quizify-first-paint-bootstrap")
+        critical_style_index = rendered.index("data-quizify-first-paint-style")
+        runtime_index = rendered.index("_quizify.js")
+        self.assertLess(config_index, bootstrap_index)
+        self.assertLess(bootstrap_index, critical_style_index)
+        self.assertLess(critical_style_index, runtime_index)
+        self.assertIn("__quizifyFirstPaint", rendered)
+        self.assertIn('visibility: hidden', rendered)
+
+    def test_managed_css_paints_android_night_canvas_before_boot(self):
+        self.assertIn("min-height: 100vh", notetype.MANAGED_CSS_BLOCK)
+        self.assertIn(".card.night_mode", notetype.MANAGED_CSS_BLOCK)
+        self.assertIn(".card.ankidroid_dark_mode", notetype.MANAGED_CSS_BLOCK)
+        self.assertIn("background-color: #101614", notetype.MANAGED_CSS_BLOCK)
 
     def test_uses_a_numbered_name_when_the_safe_fallback_also_exists(self):
         collisions = [

@@ -1,6 +1,6 @@
 # Third-party software
 
-Quizify Markdown 1.2.0 bundles the following software in its generated review/editor assets:
+Quizify Markdown 1.2.2 bundles the following software in its generated review/editor assets:
 
 - Marked 18.0.6 — MIT License
 - KaTeX 0.16.40 and bundled fonts — MIT License

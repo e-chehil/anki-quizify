@@ -1,8 +1,8 @@
 {
   "package": "anki_quizify",
   "name": "Quizify Markdown",
-  "version": "1.2.0",
-  "human_version": "1.2.0",
+  "version": "1.2.2",
+  "human_version": "1.2.2",
   "min_point_version": 250900,
-  "mod": 2026073001
+  "mod": 2026082902
 }

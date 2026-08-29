@@ -52,6 +52,44 @@ test("built card runtime localizes Russian UI and falls back to English", () => 
   );
 });
 
+test("boot applies Android night state and releases the first-paint gate", () => {
+  const config = JSON.stringify({
+    schema_version: 1,
+    review: { theme: "gezhi", cardless: false, floating_control: false },
+    platform: { ankidroid_api: true }
+  });
+  const dom = runtime(
+    `<script type="application/json" id="quizify-config">${config}</script>` +
+      '<div class="quizify-stage" data-quizify-first-paint="pending">' +
+      '<main id="note-container"><section id="front" class="quizify-field">Text</section></main>' +
+      "</div>"
+  );
+  dom.window.document.body.classList.add("ankidroid_dark_mode");
+  let revealCalls = 0;
+  dom.window.__quizifyFirstPaint = {
+    reveal() {
+      revealCalls += 1;
+      dom.window.document
+        .querySelectorAll('[data-quizify-first-paint="pending"]')
+        .forEach((stage) => stage.removeAttribute("data-quizify-first-paint"));
+    }
+  };
+
+  dom.window.Quizify.boot({ side: "front" });
+
+  assert.equal(dom.window.document.documentElement.dataset.quizifyTheme, "gezhi");
+  assert.equal(dom.window.document.documentElement.dataset.quizifyNight, "true");
+  assert.equal(dom.window.document.body.dataset.quizifyNight, "true");
+  assert.equal(revealCalls, 1);
+  assert.equal(
+    dom.window.document.querySelector(".quizify-stage").hasAttribute(
+      "data-quizify-first-paint"
+    ),
+    false
+  );
+  dom.window.close();
+});
+
 function renderedField(source) {
   const config = JSON.stringify({
     schema_version: 1,

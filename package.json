@@ -1,6 +1,6 @@
 {
   "name": "anki-quizify",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -12,7 +12,7 @@
     "build:release": "node tools/build.mjs --release",
     "test:js": "node --import ./tests-js/setup.mjs --test tests-js/*.test.mjs && node tools/run-legacy-tests.mjs",
     "test:py": "python tools/check_test_layout.py && python -m unittest discover -s tests -p \"test_*.py\"",
-    "test:release": "node --test tests-js/package-contract.test.mjs tests-js/rendering.test.mjs tests-js/release-build.release.mjs",
+    "test:release": "node --test tests-js/mobile-first-paint.test.mjs tests-js/package-contract.test.mjs tests-js/rendering.test.mjs tests-js/release-build.release.mjs",
     "test": "npm run build && npm run test:js && npm run test:py",
     "package": "npm test && npm run build:release && npm run test:release && npm run test:py && python tools/build_addon.py"
   },

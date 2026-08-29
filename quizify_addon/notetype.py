@@ -14,7 +14,13 @@ MANAGED_CSS_END = "/* quizify-managed-css:v1:end */"
 MANAGED_CSS_BLOCK = (
     f"{MANAGED_CSS_START}\n"
     "/* Quizify styling is provided by _quizify.css. */\n"
-    ".card { margin: 0; }\n"
+    ".card:not([data-quizify-theme]) { margin: 0; min-height: 100vh; "
+    "background-color: #f2f0e9; color: #202927; }\n"
+    ".card.nightMode:not([data-quizify-theme]), "
+    ".card.night-mode:not([data-quizify-theme]), "
+    ".card.night_mode:not([data-quizify-theme]), "
+    ".card.ankidroid_dark_mode:not([data-quizify-theme]) { "
+    "background-color: #101614; color: #edf2ef; color-scheme: dark; }\n"
     f"{MANAGED_CSS_END}"
 )
 DEFAULT_CSS = f"{MANAGED_CSS_BLOCK}\n"
@@ -25,7 +31,23 @@ LEGACY_TEMPLATE_MARKERS = ('id="quizify-config"', "_quizify.js")
 
 def template_html(addon_dir: Path, name: str, config: dict) -> str:
     body = (addon_dir / "templates" / name).read_text(encoding="utf-8")
-    return f"{MANAGED_TEMPLATE_MARKER}\n{config_script(config)}\n{body}"
+    first_paint_js = (addon_dir / "templates" / "first-paint.js").read_text(
+        encoding="utf-8"
+    )
+    first_paint_css = (addon_dir / "templates" / "first-paint.css").read_text(
+        encoding="utf-8"
+    )
+    if "</script" in first_paint_js.lower() or "</style" in first_paint_css.lower():
+        raise ValueError("Quizify first-paint assets must be safe to embed")
+    prelude = (
+        '<script data-quizify-first-paint-bootstrap="v1">'
+        f"{first_paint_js}</script>\n"
+        '<style data-quizify-first-paint-style="v1">'
+        f"{first_paint_css}</style>"
+    )
+    return (
+        f"{MANAGED_TEMPLATE_MARKER}\n{config_script(config)}\n{prelude}\n{body}"
+    )
 
 
 def _is_managed_template(template: dict) -> bool:

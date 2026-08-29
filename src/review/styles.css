@@ -20,6 +20,7 @@
   --q-control-primary-hover: #0b625a;
   --q-control-on-primary: #ffffff;
   --q-accent: #d77a42;
+  --q-accent-glow: rgba(215, 122, 66, 0.12);
   --q-accent-soft: #fbeadf;
   --q-info: #3d6fc2;
   --q-info-soft: #eaf0fc;
@@ -87,9 +88,12 @@ pre > code.quizify-code-lines {
 .nightMode,
 .night-mode,
 .night_mode,
+.ankidroid_dark_mode,
+:root[data-quizify-night="true"],
 body.nightMode,
 body.night-mode,
 body.night_mode,
+body.ankidroid_dark_mode,
 :host(.nightMode),
 :host(.night-mode),
 :host(.night_mode) {
@@ -112,6 +116,7 @@ body.night_mode,
   --q-control-primary-hover: #209783;
   --q-control-on-primary: #ffffff;
   --q-accent: #f1a16d;
+  --q-accent-glow: rgba(241, 161, 109, 0.14);
   --q-accent-soft: #452b20;
   --q-info: #93c5fd;
   --q-info-soft: #1d2d4f;
@@ -177,6 +182,7 @@ body.night_mode,
   --q-control-primary-hover: #134857;
   --q-control-on-primary: #fffefa;
   --q-accent: #db8540;
+  --q-accent-glow: rgba(219, 133, 64, 0.12);
   --q-accent-soft: #fbeee2;
   --q-info: #2775b6;
   --q-info-soft: #e9f0f6;
@@ -246,15 +252,19 @@ body.night_mode,
 :root[data-quizify-theme="gezhi"].nightMode,
 :root[data-quizify-theme="gezhi"].night-mode,
 :root[data-quizify-theme="gezhi"].night_mode,
+:root[data-quizify-theme="gezhi"][data-quizify-night="true"],
 :root[data-quizify-theme="gezhi"] body.nightMode,
 :root[data-quizify-theme="gezhi"] body.night-mode,
 :root[data-quizify-theme="gezhi"] body.night_mode,
+:root[data-quizify-theme="gezhi"] body.ankidroid_dark_mode,
 [data-quizify-theme="gezhi"].nightMode,
 [data-quizify-theme="gezhi"].night-mode,
 [data-quizify-theme="gezhi"].night_mode,
+[data-quizify-theme="gezhi"].ankidroid_dark_mode,
 .nightMode [data-quizify-theme="gezhi"],
 .night-mode [data-quizify-theme="gezhi"],
 .night_mode [data-quizify-theme="gezhi"],
+.ankidroid_dark_mode [data-quizify-theme="gezhi"],
 :host([data-quizify-theme="gezhi"].nightMode),
 :host([data-quizify-theme="gezhi"].night-mode),
 :host([data-quizify-theme="gezhi"].night_mode),
@@ -280,6 +290,7 @@ body.night_mode,
   --q-control-primary-hover: #66a9c9;
   --q-control-on-primary: #fffef9;
   --q-accent: #db8540;
+  --q-accent-glow: rgba(219, 133, 64, 0.14);
   --q-accent-soft: #513b32;
   --q-info: #5cb3cc;
   --q-info-soft: #334954;
@@ -391,7 +402,7 @@ html {
 body {
   margin: 0;
   padding: clamp(12px, 3vw, 32px);
-  background-color: transparent;
+  background-color: var(--q-bg);
   background-image: none;
   color: var(--q-text);
   font-family: var(--q-font);
@@ -401,7 +412,7 @@ body {
 
 body.card,
 .card {
-  background-color: transparent;
+  background-color: var(--q-bg);
   background-image: none;
   color: var(--q-text);
 }
@@ -426,12 +437,21 @@ body::-webkit-scrollbar {
   position: fixed;
   z-index: -1;
   inset: 0;
+  box-sizing: border-box;
   background:
     radial-gradient(circle at 12% 8%, var(--q-primary-glow), transparent 30rem),
-    radial-gradient(circle at 92% 88%, color-mix(in srgb, var(--q-accent) 12%, transparent), transparent 28rem),
+    radial-gradient(circle at 92% 88%, var(--q-accent-glow), transparent 28rem),
     linear-gradient(145deg, var(--q-bg), var(--q-bg-deep));
   background-repeat: no-repeat;
   pointer-events: none;
+}
+
+/*
+ * The reviewer body owns the visible canvas. Keep the stage rule only for
+ * bodyless/legacy preview surfaces and suppress its duplicate in documents.
+ */
+body .quizify-stage::before {
+  content: none;
 }
 
 .container {
@@ -2663,7 +2683,30 @@ button.quizify-orb {
   }
 }
 
-/* 格致's restrained component details sit on top of its complete token set. */
+/* Reviewer canvas backgrounds follow the active theme and retain reviewer.css scrolling semantics. */
+:root[data-quizify-theme="kaiwu"] body,
+body[data-quizify-theme="kaiwu"] {
+  /* Android fallback for WebViews that cannot parse color-mix(). */
+  background:
+    radial-gradient(circle at 12% 8%, var(--q-primary-glow), transparent 30rem),
+    radial-gradient(circle at 92% 88%, var(--q-accent-glow), transparent 28rem),
+    linear-gradient(145deg, var(--q-bg), var(--q-bg-deep)) !important;
+  /* This is the native reviewer canvas treatment verified in Anki. */
+  background:
+    radial-gradient(circle at 12% 8%, var(--q-primary-glow), transparent 30rem),
+    radial-gradient(circle at 92% 88%, color-mix(in srgb, var(--q-accent) 12%, transparent), transparent 28rem),
+    linear-gradient(145deg, var(--q-bg), var(--q-bg-deep)) !important;
+  background-attachment: fixed !important;
+  background-position: top !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+}
+
+:root[data-quizify-theme="gezhi"] body,
+body[data-quizify-theme="gezhi"] {
+  background: var(--q-bg);
+}
+
 :root[data-quizify-theme="gezhi"] .quizify-stage::before,
 .quizify-stage[data-quizify-theme="gezhi"]::before {
   background: var(--q-bg);

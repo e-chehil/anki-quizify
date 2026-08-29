@@ -6,7 +6,7 @@ Anki Quizify 是一个 Anki 加载项和卡片模板项目。它让你在 Anki �
 
 当前主线实现位于 `quizify_addon/`。仓库根目录的旧模板和资源已经退役：`front.html` / `back.html` 只保留失败关闭的迁移提示，旧 `_myquizify.js` / `_styles.css` 不再提供；实际加载项只使用 `quizify_addon/templates/`、`quizify_addon/_quizify.js` 和 `quizify_addon/_quizify.css`。
 
-当前版本为 **1.2.0**。本版在 1.1.0 的中、英、俄国际化与统一 SVG 图标系统基础上完成发布前视觉收尾：拉开上下相邻填空及其聚焦外框，精简卡片批注与揭示题型图形，并隔离 Anki WebView 对插件按钮与卡片背景的样式注入。批注气泡现按真实可见区域稳定定位；开务 / 格致背景不再受 reviewer 的 `body.card` 与 `background-position-y` 切割；Android 的三种夜间类名、选择题暗色变量和触屏悬停状态也已统一。插件继续自动跟随 Anki 界面语言，未知语言回退英文；批量导入、媒体安全、KaTeX 公式保护与双主题等既有能力保持不变。
+当前版本为 **1.2.2**。本版针对 AnkiDroid 在显示答案、评分后切换下一张卡时重建整页的行为，加入同步首帧主题引导、暗色画布和渲染就绪门控，避免暗色主题先露出浅色根背景或未渲染正文造成刺眼闪烁。桌面端的持久资源加载，以及编辑器八种题型按钮保留选区并套入对应语法的修复继续保留。
 
 面向用户的发布说明可见 [`docs/release-description.md`](docs/release-description.md)。
 

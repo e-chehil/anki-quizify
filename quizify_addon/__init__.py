@@ -49,6 +49,33 @@ def addon_metadata() -> dict:
 
 ADDON_VERSION = str(addon_metadata().get("version", "unknown"))
 
+REVIEW_ASSET_TAGS = (
+    '<link rel="stylesheet" href="./_quizify.css">',
+    '<script src="./_quizify-i18n.js"></script>',
+    '<script src="./_persistence.js"></script>',
+    '<script src="./_quizify.js"></script>',
+)
+REVIEW_STYLESHEET_ID = "quizify-review-styles"
+
+
+def _review_runtime_state_script(active: bool) -> str:
+    enabled = "true" if active else "false"
+    return (
+        '<script data-quizify-review-state="v1">(function(active){'
+        f'const link=document.getElementById("{REVIEW_STYLESHEET_ID}");'
+        "if(link)link.disabled=!active;"
+        "if(active){document.documentElement.setAttribute('data-quizify-active','true');}"
+        "else{globalThis.Quizify?.destroy?.();"
+        "globalThis.__quizifyFirstPaint?.cancel?.();"
+        "delete globalThis.__quizifyFirstPaint;"
+        "document.documentElement.removeAttribute('data-quizify-active');"
+        "document.documentElement.removeAttribute('data-quizify-theme');"
+        "document.documentElement.removeAttribute('data-quizify-night');"
+        "document.body?.removeAttribute('data-quizify-theme');"
+        "document.body?.removeAttribute('data-quizify-night');}"
+        f"}})({enabled});</script>"
+    )
+
 
 def default_config() -> dict:
     return json.loads(read("config.json"))
@@ -133,12 +160,13 @@ def ensure_notetype(
 
 def on_card_will_show(text: str, card, kind: str) -> str:
     """Escape only fields delimited by a Quizify-owned rendered template."""
+    normalized_kind = str(kind or "").lower()
+    review_kind = normalized_kind in {"reviewquestion", "reviewanswer"}
     if MANAGED_TEMPLATE_MARKER not in text:
-        return text
+        return _review_runtime_state_script(False) + text if review_kind else text
     error_html = source_error_html()
     if text.count(MANAGED_TEMPLATE_MARKER) != 1:
         return error_html
-    normalized_kind = str(kind or "").lower()
     expected_sides = (
         ("front", "back")
         if "answer" in normalized_kind
@@ -159,10 +187,45 @@ def on_card_will_show(text: str, card, kind: str) -> str:
     )
     if 'id="quizify-runtime-locale"' not in protected:
         protected = locale_script + protected
+    # Desktop reviewer assets are mounted once in the persistent WebView head.
+    # Removing only the exact managed-template tags prevents each question /
+    # answer swap from detaching and reparsing the large runtime. Other card
+    # surfaces, and mobile clients where this Python hook does not run, keep
+    # the template-local offline assets as their compatibility path.
+    if review_kind:
+        for tag in REVIEW_ASSET_TAGS:
+            protected = protected.replace(tag, "")
+        protected = _review_runtime_state_script(True) + protected
     return protected
 
 
+def _is_reviewer_context(context) -> bool:
+    try:
+        from aqt.reviewer import Reviewer
+
+        return isinstance(context, Reviewer)
+    except Exception:
+        return False
+
+
 def on_webview_set_content(content: WebContent, context) -> None:
+    if _is_reviewer_context(context):
+        addon = mw.addonManager.addonFromModule(__name__)
+        locale = current_locale()
+        content.head += (
+            '<script id="quizify-review-locale">globalThis.quizifyLocale='
+            f"{json.dumps(locale)};</script>"
+            f'<link id="{REVIEW_STYLESHEET_ID}" rel="stylesheet" '
+            f'href="/_addons/{addon}/_quizify.css?v={ADDON_VERSION}">'
+        )
+        content.js.extend(
+            [
+                f"/_addons/{addon}/_quizify-i18n.js?v={ADDON_VERSION}",
+                f"/_addons/{addon}/_persistence.js?v={ADDON_VERSION}",
+                f"/_addons/{addon}/_quizify.js?v={ADDON_VERSION}&lang={locale}",
+            ]
+        )
+        return
     if not isinstance(context, Editor):
         return
     addon = mw.addonManager.addonFromModule(__name__)

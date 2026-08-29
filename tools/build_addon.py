@@ -51,6 +51,8 @@ PACKAGE_MEMBERS = frozenset(
         "package.json",
         "settings.py",
         "templates/back.html",
+        "templates/first-paint.css",
+        "templates/first-paint.js",
         "templates/front.html",
         "THIRD_PARTY_LICENSES.md",
         "user_files/README.txt",

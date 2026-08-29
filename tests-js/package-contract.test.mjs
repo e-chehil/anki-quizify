@@ -12,7 +12,13 @@ test("templates are offline-only and use the v1 boot API", async () => {
     assert.match(template, /Quizify\.boot/);
     assert.match(template, /_quizify-i18n\.js/);
     assert.match(template, /_quizify\.js/);
+    assert.match(template, /data-quizify-first-paint="pending"/);
   }
+  const firstPaintJs = await readFile(new URL("templates/first-paint.js", root), "utf8");
+  const firstPaintCss = await readFile(new URL("templates/first-paint.css", root), "utf8");
+  assert.match(firstPaintJs, /ankidroid_dark_mode/);
+  assert.match(firstPaintJs, /data-quizify-night/);
+  assert.match(firstPaintCss, /data-quizify-first-paint/);
 });
 
 test("media manifest matches every bundled runtime asset", async () => {

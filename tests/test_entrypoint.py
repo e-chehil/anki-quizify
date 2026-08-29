@@ -8,7 +8,14 @@ from urllib.parse import parse_qs, urlsplit
 
 ADDON_ROOT = Path(__file__).resolve().parents[1] / "quizify_addon"
 PACKAGE = "quizify_entrypoint_test"
-AQT_MODULES = ("aqt", "aqt.editor", "aqt.qt", "aqt.webview", "aqt.utils")
+AQT_MODULES = (
+    "aqt",
+    "aqt.editor",
+    "aqt.qt",
+    "aqt.reviewer",
+    "aqt.webview",
+    "aqt.utils",
+)
 
 
 class FakeMimeData:
@@ -126,6 +133,8 @@ class EntrypointTest(unittest.TestCase):
         aqt.mw = self.mw
         editor_module = types.ModuleType("aqt.editor")
         editor_module.Editor = type("Editor", (), {})
+        reviewer_module = types.ModuleType("aqt.reviewer")
+        reviewer_module.Reviewer = type("Reviewer", (), {})
         qt_module = types.ModuleType("aqt.qt")
         qt_module.QAction = QAction
         qt_module.QMimeData = FakeMimeData
@@ -139,6 +148,7 @@ class EntrypointTest(unittest.TestCase):
                 "aqt": aqt,
                 "aqt.editor": editor_module,
                 "aqt.qt": qt_module,
+                "aqt.reviewer": reviewer_module,
                 "aqt.webview": webview_module,
                 "aqt.utils": utils_module,
             }
@@ -253,6 +263,29 @@ class EntrypointTest(unittest.TestCase):
         )
         self.assertEqual(editor_query(" GEZHI ")["theme"], ["kaiwu"])
 
+    def test_reviewer_assets_are_mounted_once_in_the_persistent_webview(self):
+        self.mw.addonManager.addonFromModule = lambda _module_name: "quizify"
+        self.addon.current_locale = lambda: "zh-CN"
+        content = types.SimpleNamespace(js=[], css=[], head="")
+
+        self.addon.on_webview_set_content(content, sys.modules["aqt.reviewer"].Reviewer())
+
+        self.assertEqual(
+            content.js,
+            [
+                f"/_addons/quizify/_quizify-i18n.js?v={self.addon.ADDON_VERSION}",
+                f"/_addons/quizify/_persistence.js?v={self.addon.ADDON_VERSION}",
+                f"/_addons/quizify/_quizify.js?v={self.addon.ADDON_VERSION}&lang=zh-CN",
+            ],
+        )
+        self.assertEqual(content.css, [])
+        self.assertIn('globalThis.quizifyLocale="zh-CN"', content.head)
+        self.assertIn('id="quizify-review-styles"', content.head)
+        self.assertIn(
+            f'/_addons/quizify/_quizify.css?v={self.addon.ADDON_VERSION}',
+            content.head,
+        )
+
     def test_card_hook_only_processes_managed_template_source_markers(self):
         unowned = (
             "<!-- quizify-source:start:front -->"
@@ -269,6 +302,40 @@ class EntrypointTest(unittest.TestCase):
         self.assertIn('globalThis.quizifyLocale="ru"', protected)
         self.assertIn("<!-- quizify-source:safe:front -->", protected)
         self.assertIn("&lt;script&gt;bad()&lt;/script&gt;", protected)
+
+    def test_review_card_hook_removes_only_preloaded_runtime_asset_tags(self):
+        tags = "\n".join(self.addon.REVIEW_ASSET_TAGS)
+        managed = (
+            self.addon.MANAGED_TEMPLATE_MARKER
+            + tags
+            + '<section id="front"><!-- quizify-source:start:front -->safe'
+            + "<!-- quizify-source:end:front --></section>"
+            + '<script>window.Quizify.boot({ side: "front" });</script>'
+        )
+
+        reviewed = self.addon.on_card_will_show(
+            managed, None, "reviewQuestion"
+        )
+        for tag in self.addon.REVIEW_ASSET_TAGS:
+            self.assertNotIn(tag, reviewed)
+        self.assertIn("Quizify.boot", reviewed)
+        self.assertIn("link.disabled=!active", reviewed)
+
+        previewed = self.addon.on_card_will_show(
+            managed, None, "previewQuestion"
+        )
+        for tag in self.addon.REVIEW_ASSET_TAGS:
+            self.assertIn(tag, previewed)
+
+        ordinary = "<p>ordinary card</p>"
+        deactivated = self.addon.on_card_will_show(
+            ordinary, None, "reviewQuestion"
+        )
+        self.assertTrue(deactivated.endswith(ordinary))
+        self.assertIn("Quizify?.destroy", deactivated)
+        self.assertIn("__quizifyFirstPaint?.cancel", deactivated)
+        self.assertIn("removeAttribute('data-quizify-night')", deactivated)
+        self.assertIn(")(false)", deactivated.replace(";", ""))
 
     def test_card_hook_fails_closed_on_duplicate_ownership_or_cross_markers(self):
         marker = self.addon.MANAGED_TEMPLATE_MARKER

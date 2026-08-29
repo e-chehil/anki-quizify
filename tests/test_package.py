@@ -45,6 +45,8 @@ EXPECTED_PACKAGE_MEMBERS = {
     "package.json",
     "settings.py",
     "templates/back.html",
+    "templates/first-paint.css",
+    "templates/first-paint.js",
     "templates/front.html",
     "THIRD_PARTY_LICENSES.md",
     "user_files/README.txt",
@@ -83,7 +85,7 @@ class PackageTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertEqual(manifest["human_version"], version)
         self.assertEqual(manifest["min_point_version"], 250900)
-        self.assertEqual(manifest["mod"], 2026073001)
+        self.assertEqual(manifest["mod"], 2026082902)
         self.assertEqual(project["version"], version)
         self.assertEqual(lock["version"], version)
         self.assertEqual(lock["packages"][""]["version"], version)
